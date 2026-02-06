@@ -1,0 +1,11 @@
+<?php
+
+namespace App\Filament\Admin\Resources\Carts\Pages;
+
+use App\Filament\Admin\Resources\Carts\CartResource;
+use Filament\Resources\Pages\ViewRecord;
+
+class ViewCart extends ViewRecord
+{
+    protected static string $resource = CartResource::class;
+}
