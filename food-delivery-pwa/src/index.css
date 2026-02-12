@@ -1,0 +1,396 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Food Delivery App Design System - Warm Orange Theme */
+
+:root {
+  --background: 30 20% 98%;
+  --foreground: 20 15% 15%;
+
+  --card: 0 0% 100%;
+  --card-foreground: 20 15% 15%;
+
+  --popover: 0 0% 100%;
+  --popover-foreground: 20 15% 15%;
+
+  --primary: 24 95% 53%;
+  --primary-foreground: 0 0% 100%;
+
+  --secondary: 30 30% 96%;
+  --secondary-foreground: 20 15% 25%;
+
+  --muted: 30 15% 94%;
+  --muted-foreground: 20 10% 45%;
+
+  --accent: 24 100% 95%;
+  --accent-foreground: 24 95% 40%;
+
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 0 0% 100%;
+
+  --border: 30 20% 90%;
+  --input: 30 20% 90%;
+  --ring: 24 95% 53%;
+
+  --radius: 0.75rem;
+
+  /* Sidebar colors */
+  --sidebar-background: 0 0% 100%;
+  --sidebar-foreground: 20 10% 45%;
+  --sidebar-primary: 24 95% 53%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 24 100% 95%;
+  --sidebar-accent-foreground: 24 95% 40%;
+  --sidebar-border: 30 20% 92%;
+  --sidebar-ring: 24 95% 53%;
+
+  /* Custom tokens */
+  --success: 142 76% 36%;
+  --success-foreground: 0 0% 100%;
+  --warning: 38 92% 50%;
+  --warning-foreground: 0 0% 100%;
+}
+
+.dark {
+  --background: 20 15% 8%;
+  --foreground: 30 20% 95%;
+
+  --card: 20 15% 12%;
+  --card-foreground: 30 20% 95%;
+
+  --popover: 20 15% 12%;
+  --popover-foreground: 30 20% 95%;
+
+  --primary: 24 95% 53%;
+  --primary-foreground: 0 0% 100%;
+
+  --secondary: 20 15% 18%;
+  --secondary-foreground: 30 20% 90%;
+
+  --muted: 20 15% 20%;
+  --muted-foreground: 30 10% 55%;
+
+  --accent: 24 50% 20%;
+  --accent-foreground: 24 95% 70%;
+
+  --destructive: 0 62% 40%;
+  --destructive-foreground: 0 0% 100%;
+
+  --border: 20 15% 20%;
+  --input: 20 15% 20%;
+  --ring: 24 95% 53%;
+
+  --sidebar-background: 20 15% 10%;
+  --sidebar-foreground: 30 15% 70%;
+  --sidebar-primary: 24 95% 53%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 24 50% 18%;
+  --sidebar-accent-foreground: 24 95% 70%;
+  --sidebar-border: 20 15% 18%;
+  --sidebar-ring: 24 95% 53%;
+
+  --success: 142 70% 45%;
+  --success-foreground: 0 0% 100%;
+  --warning: 38 92% 50%;
+  --warning-foreground: 0 0% 100%;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  border-color: hsl(var(--border));
+}
+
+body {
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
+  font-family: 'Poppins', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.food-card {
+  background-color: hsl(var(--card));
+  border-radius: 0.75rem;
+  overflow: hidden;
+  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
+  transition: box-shadow 0.2s;
+}
+
+.food-card:hover {
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+}
+
+.badge-available {
+  background-color: hsl(var(--accent));
+  color: hsl(var(--accent-foreground));
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 0.125rem 0.5rem;
+  border-radius: 9999px;
+}
+
+.badge-unavailable {
+  background-color: hsl(var(--muted));
+  color: hsl(var(--muted-foreground));
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 0.125rem 0.5rem;
+  border-radius: 9999px;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  color: hsl(var(--sidebar-foreground));
+  transition: all 0.2s;
+}
+
+.nav-item:hover {
+  background-color: hsl(var(--sidebar-accent));
+  color: hsl(var(--sidebar-accent-foreground));
+}
+
+.nav-item-active {
+  background-color: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+}
+
+.nav-item-active:hover {
+  background-color: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+}
+
+.filter-chip {
+  padding: 0.5rem 1rem;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.2s;
+  border: 1px solid;
+}
+
+.filter-chip-active {
+  background-color: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+  border-color: hsl(var(--primary));
+}
+
+.filter-chip-inactive {
+  background-color: hsl(var(--card));
+  color: hsl(var(--muted-foreground));
+  border-color: hsl(var(--border));
+}
+
+/* Dialog Animations */
+@keyframes dialogOverlayShow {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes dialogContentShow {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -48%) scale(.96);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+@keyframes slideUpAndFade {
+  from {
+    opacity: 0;
+    transform: translateY(2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideRightAndFade {
+  from {
+    opacity: 0;
+    transform: translateX(-2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideDownAndFade {
+  from {
+    opacity: 0;
+    transform: translateY(-2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideLeftAndFade {
+  from {
+    opacity: 0;
+    transform: translateX(2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInFromRight {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes bounceIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+  70% {
+    transform: scale(0.9);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-in {
+  animation-duration: 0.3s;
+  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+  animation-fill-mode: both;
+}
+
+.duration-300 {
+  animation-duration: 300ms;
+}
+
+.duration-500 {
+  animation-duration: 500ms;
+}
+
+.duration-700 {
+  animation-duration: 700ms;
+}
+
+.duration-900 {
+  animation-duration: 900ms;
+}
+
+.duration-1000 {
+  animation-duration: 1000ms;
+}
+
+.duration-1100 {
+  animation-duration: 1100ms;
+}
+
+.duration-1200 {
+  animation-duration: 1200ms;
+}
+
+.fade-in-0 {
+  animation-name: dialogOverlayShow;
+}
+
+.zoom-in-95 {
+  animation-name: dialogContentShow;
+}
+
+.slide-in-from-bottom-2 {
+  animation-name: slideUpAndFade;
+}
+
+.slide-in-from-right-2 {
+  animation-name: slideRightAndFade;
+}
+
+.slide-in-from-top-2 {
+  animation-name: slideDownAndFade;
+}
+
+.slide-in-from-left-2 {
+  animation-name: slideLeftAndFade;
+}
+
+.slide-in-from-right-2 {
+  animation-name: slideInFromRight;
+}
+
+.bounce-in {
+  animation-name: bounceIn;
+}
+
+/* Animation delay classes */
+.animation-delay-0 {
+  animation-delay: 0ms;
+}
+
+.animation-delay-100 {
+  animation-delay: 100ms;
+}
+
+.animation-delay-200 {
+  animation-delay: 200ms;
+}
+
+.animation-delay-300 {
+  animation-delay: 300ms;
+}
+
+.animation-delay-400 {
+  animation-delay: 400ms;
+}
+
+.animation-delay-500 {
+  animation-delay: 500ms;
+}
+
+.animation-delay-600 {
+  animation-delay: 600ms;
+}
+
+.animation-delay-700 {
+  animation-delay: 700ms;
+}
+
+.animation-delay-800 {
+  animation-delay: 800ms;
+}
+
+.animation-delay-900 {
+  animation-delay: 900ms;
+}
+
+.filter-chip-inactive:hover {
+  border-color: hsl(var(--primary));
+  color: hsl(var(--primary));
+}
