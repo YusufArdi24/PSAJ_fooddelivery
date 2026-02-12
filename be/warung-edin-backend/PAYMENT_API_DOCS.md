@@ -10,7 +10,7 @@
 - **gopay**: GoPay
 - **dana**: DANA
 - **ovo**: OVO
-- **linkaja**: LinkAja  
+- **linkaja**: LinkAja 
 - **shopeepay**: ShopeePay
 
 ### Bank Transfer
