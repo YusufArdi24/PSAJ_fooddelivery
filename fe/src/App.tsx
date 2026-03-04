@@ -20,11 +20,13 @@ import OrderHistory from "./pages/OrderHistory";
 import LocationPage from "./pages/LocationPage";
 import LocationConfirmation from "./pages/LocationConfirmation";
 import ManualAddressForm from "./pages/ManualAddressForm";
+import GeoFencing from "./pages/GeoFencing";
 import CompleteProfile from "./pages/CompleteProfile";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import VerifyEmail from "./pages/VerifyEmail";
 import NotFound from "./pages/NotFound";
+import LocationCheckWrapper from "./components/LocationCheckWrapper";
 
 const queryClient = new QueryClient();
 
@@ -39,6 +41,7 @@ const AnimatedRoutes = () => {
   
   // Animate auth + onboarding pages
   const isAnimatedPage = location.pathname === '/' || 
+                          location.pathname === '/geo-fencing' ||
                           location.pathname === '/signup' || 
                           location.pathname === '/signin' ||
                           location.pathname === '/complete-profile' ||
@@ -52,8 +55,11 @@ const AnimatedRoutes = () => {
   return (
     <AnimatePresence mode="wait">
       <Routes location={location} key={isAnimatedPage ? location.pathname : 'static'}>
+        {/* Geo-fencing as first page */}
+        <Route path="/" element={<AnimatedPage><GeoFencing /></AnimatedPage>} />
+        <Route path="/geo-fencing" element={<AnimatedPage><GeoFencing /></AnimatedPage>} />
+        
         {/* Auth pages with animation */}
-        <Route path="/" element={<AnimatedPage><SignUp /></AnimatedPage>} />
         <Route path="/signup" element={<AnimatedPage><SignUp /></AnimatedPage>} />
         <Route path="/signin" element={<AnimatedPage><SignIn /></AnimatedPage>} />
         
@@ -66,12 +72,14 @@ const AnimatedRoutes = () => {
         <Route path="/reset-password" element={<AnimatedPage><ResetPassword /></AnimatedPage>} />
         <Route path="/verify-email" element={<AnimatedPage><VerifyEmail /></AnimatedPage>} />
         
-        {/* Pages dengan theme - no animation */}
+        {/* Pages dengan theme dan location validation - no animation */}
         <Route 
           path="/dashboard" 
           element={
             <ThemedRoute>
-              <Dashboard />
+              <LocationCheckWrapper>
+                <Dashboard />
+              </LocationCheckWrapper>
             </ThemedRoute>
           } 
         />
@@ -79,7 +87,9 @@ const AnimatedRoutes = () => {
           path="/settings" 
           element={
             <ThemedRoute>
-              <Settings />
+              <LocationCheckWrapper>
+                <Settings />
+              </LocationCheckWrapper>
             </ThemedRoute>
           } 
         />
@@ -87,7 +97,9 @@ const AnimatedRoutes = () => {
           path="/order-history" 
           element={
             <ThemedRoute>
-              <OrderHistory />
+              <LocationCheckWrapper>
+                <OrderHistory />
+              </LocationCheckWrapper>
             </ThemedRoute>
           } 
         />

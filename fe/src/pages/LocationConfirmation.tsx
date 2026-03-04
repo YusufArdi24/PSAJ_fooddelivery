@@ -46,7 +46,7 @@ export default function LocationConfirmation() {
           setIsLoading(false);
         }
       },
-      (error) => {
+      (error: GeolocationPositionError) => {
         setError(getGeolocationError(error.code));
         setIsLoading(false);
       },
@@ -232,7 +232,7 @@ export default function LocationConfirmation() {
                 <Input
                   id="address"
                   value={editedAddress}
-                  onChange={(e) => setEditedAddress(e.target.value)}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEditedAddress(e.target.value)}
                   placeholder="Alamat pengiriman"
                   className="pl-12 py-4 text-base border-border bg-card focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                 />
