@@ -75,7 +75,7 @@ const ProfileDropdown = ({ userData, onLogout }: ProfileDropdownProps) => {
               alt="Profile" 
               className="w-full h-full object-cover"
               crossOrigin="anonymous"
-              onError={(e) => {
+              onError={() => {
                 console.error('[ProfileDropdown] Image failed to load:', userData.avatar);
                 setImageError(true);
               }}
@@ -122,7 +122,7 @@ const ProfileDropdown = ({ userData, onLogout }: ProfileDropdownProps) => {
                       alt="Profile" 
                       className="w-full h-full object-cover"
                       crossOrigin="anonymous"
-                      onError={(e) => {
+                      onError={() => {
                         console.error('[ProfileDropdown-Dropdown] Image failed to load:', userData.avatar);
                         setImageError(true);
                       }}

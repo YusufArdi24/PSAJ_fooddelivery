@@ -81,7 +81,7 @@ export default function Settings() {
       const avatarUrl = getAvatarUrl(user.avatar);
       console.log('Initializing profile image from user.avatar:', user.avatar);
       console.log('Generated avatar URL:', avatarUrl);
-      setProfileImage(avatarUrl);
+      setProfileImage(avatarUrl || null);
     }
 
     // Load location if exists
@@ -297,7 +297,7 @@ export default function Settings() {
       
       // Reset profile image to original
       if (user.avatar) {
-        setProfileImage(getAvatarUrl(user.avatar));
+        setProfileImage(getAvatarUrl(user.avatar) || null);
       } else {
         setProfileImage(null);
       }
