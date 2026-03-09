@@ -3,6 +3,10 @@ import { Button } from "./ui/button";
 import ConfirmDialog from "./ConfirmDialog";
 import PaymentMethodModal from "./PaymentMethodModal";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
+import { Input } from "./ui/input";
+import { Textarea } from "./ui/textarea";
+import { Label } from "./ui/label";
+import LeafletLocationPicker from "./LeafletLocationPicker";
 import { useState } from "react";
 
 interface CartItem {
@@ -27,7 +31,9 @@ interface CartSidebarProps {
   deliverAddress: string;
   onUpdateAddress: (address: string) => void;
   addressLabel?: string;
+  onUpdateAddressLabel?: (label: string) => void;
   addressNotes?: string;
+  onUpdateAddressNotes?: (notes: string) => void;
   note: string;
   onUpdateNote: (note: string) => void;
   onConfirmPayment: (paymentMethod: string) => void;
@@ -45,7 +51,9 @@ const CartSidebar = ({
   deliverAddress,
   onUpdateAddress,
   addressLabel,
+  onUpdateAddressLabel,
   addressNotes,
+  onUpdateAddressNotes,
   note,
   onUpdateNote,
   onConfirmPayment,
@@ -104,27 +112,75 @@ const CartSidebar = ({
         <div className="flex-1 overflow-y-auto">
           {/* Deliver Address */}
           <div className="p-4 border-b border-border animate-in slide-in-from-right-2 duration-700">
-            <h3 className="text-sm font-medium text-foreground mb-3">Alamat Pengiriman</h3>
-            <div className="flex items-center gap-2">
-              <MapPin className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-              <input
-                type="text"
-                value={deliverAddress}
-                onChange={(e) => onUpdateAddress(e.target.value)}
-                placeholder="Masukkan alamat pengiriman Anda"
-                className="flex-1 text-sm text-foreground bg-transparent border-none outline-none placeholder:text-muted-foreground focus:bg-muted/20 p-2 rounded transition-colors"
+            <h3 className="text-sm font-medium text-foreground mb-3 flex items-center gap-2">
+              <MapPin className="w-4 h-4 text-orange-500" />
+              Alamat Pengiriman
+            </h3>
+            
+            {/* Location Picker with Map */}
+            <div className="bg-muted/30 rounded-lg p-3 border border-border mb-3">
+              <LeafletLocationPicker
+                onLocationSelect={(data) => {
+                  onUpdateAddress(data.address);
+                }}
+                defaultLocation={undefined}
+                mapHeight="h-32"
+                compact={true}
               />
             </div>
-            {(addressLabel || addressNotes) && (
-              <div className="mt-2 ml-6 space-y-0.5">
-                {addressLabel && (
-                  <p className="text-xs text-orange-500 font-medium">{addressLabel}</p>
-                )}
-                {addressNotes && (
-                  <p className="text-xs text-muted-foreground">{addressNotes}</p>
-                )}
+
+            {/* Address Label (Editable) */}
+            <div className="mb-3">
+              <Label className="text-xs text-muted-foreground mb-1.5 block">
+                Label Alamat *
+              </Label>
+              <Select 
+                value={addressLabel || 'default'} 
+                onValueChange={(value) => onUpdateAddressLabel && onUpdateAddressLabel(value === 'default' ? '' : value)}
+              >
+                <SelectTrigger className="w-full text-sm h-9">
+                  <SelectValue placeholder="Pilih label alamat" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="default">Alamat Default</SelectItem>
+                  <SelectItem value="Rumah">Rumah</SelectItem>
+                  <SelectItem value="Kantor">Kantor</SelectItem>
+                  <SelectItem value="Apartemen">Apartemen</SelectItem>
+                  <SelectItem value="Kos">Kos</SelectItem>
+                  <SelectItem value="Lainnya">Lainnya</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Alamat Lengkap (Read-only, from map) */}
+            {deliverAddress && (
+              <div className="mb-3">
+                <Label className="text-xs text-muted-foreground mb-1.5 block">
+                  Alamat Lengkap
+                </Label>
+                <Textarea
+                  value={deliverAddress}
+                  readOnly
+                  className="w-full text-sm text-foreground bg-muted/50 border border-border rounded-md p-2 resize-none"
+                  rows={3}
+                />
               </div>
             )}
+            
+            {/* Address Notes (Editable) */}
+            <div>
+              <Label className="text-xs text-muted-foreground mb-1.5 block">
+                Catatan Alamat *
+              </Label>
+              <Input
+                value={addressNotes || ''}
+                onChange={(e) => onUpdateAddressNotes && onUpdateAddressNotes(e.target.value)}
+                placeholder="Contoh: Blok A1 No. 1, Gang Bima, Rumah warna putih"
+                className="w-full text-sm h-9"
+              />
+            </div>
+            
+            <p className="text-xs text-muted-foreground mt-2 italic">Alamat ini hanya untuk pesanan ini. Alamat default Anda tidak akan berubah.</p>
           </div>
 
           {/* Order Items */}

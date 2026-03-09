@@ -10,6 +10,9 @@ export interface CreateOrderRequest {
   items: OrderItem[];
   payment_method: string;
   notes?: string;
+  delivery_address?: string;
+  delivery_address_label?: string;
+  delivery_address_notes?: string;
 }
 
 export interface OrderDetail {
@@ -222,6 +225,84 @@ export const cancelOrder = async (
     return {
       success: false,
       message: error.message || "An error occurred while cancelling order",
+    };
+  }
+};
+
+/**
+ * Hide order from customer view (soft delete)
+ */
+export const hideOrder = async (orderId: number): Promise<{ success: boolean; message: string }> => {
+  try {
+    const token = getAccessToken();
+    if (!token) {
+      throw new Error("No access token found");
+    }
+
+    const response = await fetch(`${API_BASE_URL}/orders/${orderId}/hide`, {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: "application/json",
+      },
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      return {
+        success: false,
+        message: data.message || "Failed to hide order",
+      };
+    }
+
+    return data;
+  } catch (error: any) {
+    console.error("Error hiding order:", error);
+    return {
+      success: false,
+      message: error.message || "An error occurred while hiding order",
+    };
+  }
+};
+
+/**
+ * Reorder - get items from previous order to add to cart
+ */
+export const reorder = async (orderId: number): Promise<{
+  success: boolean;
+  message?: string;
+  data?: { items: any[] };
+}> => {
+  try {
+    const token = getAccessToken();
+    if (!token) {
+      throw new Error("No access token found");
+    }
+
+    const response = await fetch(`${API_BASE_URL}/orders/${orderId}/reorder`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: "application/json",
+      },
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      return {
+        success: false,
+        message: data.message || "Failed to reorder",
+      };
+    }
+
+    return data;
+  } catch (error: any) {
+    console.error("Error reordering:", error);
+    return {
+      success: false,
+      message: error.message || "An error occurred while reordering",
     };
   }
 };

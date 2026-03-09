@@ -5,6 +5,16 @@
 
     RewriteEngine On
 
+    # CORS Headers for storage files
+    <IfModule mod_headers.c>
+        # Allow all origins
+        Header always set Access-Control-Allow-Origin "*"
+        Header always set Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
+        Header always set Access-Control-Allow-Headers "Content-Type, Authorization, X-Requested-With, X-XSRF-TOKEN"
+        Header always set Access-Control-Expose-Headers "Content-Length, Content-Type"
+        Header always set Access-Control-Max-Age "86400"
+    </IfModule>
+
     # Handle Authorization Header
     RewriteCond %{HTTP:Authorization} .
     RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]

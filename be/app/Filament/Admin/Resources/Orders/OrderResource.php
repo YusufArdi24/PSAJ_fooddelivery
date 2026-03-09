@@ -30,6 +30,7 @@ class OrderResource extends Resource
     public static function getEloquentQuery(): \Illuminate\Database\Eloquent\Builder
     {
         return parent::getEloquentQuery()
+            ->where('hidden_from_admin', false)
             ->with(['customer', 'orderDetails.menu', 'payment']);
     }
 

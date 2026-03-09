@@ -23,6 +23,8 @@ interface Location {
 interface LeafletLocationPickerProps {
   onLocationSelect: (location: Location) => void;
   defaultLocation?: { lat: number; lng: number };
+  mapHeight?: string;
+  compact?: boolean;
 }
 
 const defaultCenter = {
@@ -52,6 +54,8 @@ function MapController({ mapRef }: { mapRef: React.MutableRefObject<LeafletMap |
 export default function LeafletLocationPicker({
   onLocationSelect,
   defaultLocation,
+  mapHeight = "h-44 sm:h-64 lg:h-96",
+  compact = false,
 }: LeafletLocationPickerProps) {
   const [selectedPosition, setSelectedPosition] = useState<{ lat: number; lng: number }>(
     defaultLocation || defaultCenter
@@ -184,23 +188,23 @@ export default function LeafletLocationPicker({
         onClick={handleUseCurrentLocation}
         disabled={isLocating}
         variant="outline"
-        className="flex items-center gap-2 w-full"
+        className={`flex items-center gap-2 w-full ${compact ? "h-8 text-xs" : ""}`}
       >
         {isLocating ? (
           <>
-            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current" />
+            <div className={`animate-spin rounded-full border-b-2 border-current ${compact ? "h-3 w-3" : "h-4 w-4"}`} />
             Mendapatkan Lokasi...
           </>
         ) : (
           <>
-            <Navigation className="w-4 h-4" />
+            <Navigation className={compact ? "w-3 h-3" : "w-4 h-4"} />
             Gunakan Lokasi Saya
           </>
         )}
       </Button>
 
       {/* Map */}
-      <div className="relative border-2 border-border rounded-xl overflow-hidden h-44 sm:h-64 lg:h-96">
+      <div className={`relative border-border rounded-xl overflow-hidden ${mapHeight} ${compact ? "border" : "border-2"}`}>
         <MapContainer
           center={mapCenter}
           zoom={13}
@@ -218,15 +222,15 @@ export default function LeafletLocationPicker({
       </div>
 
       {/* Address Display */}
-      <div className="bg-muted rounded-lg p-4">
-        <div className="flex items-start gap-3">
-          <MapPin className="w-5 h-5 text-orange-500 mt-0.5 flex-shrink-0" />
+      <div className={`bg-muted rounded-lg ${compact ? "p-2" : "p-4"}`}>
+        <div className={`flex items-start ${compact ? "gap-2" : "gap-3"}`}>
+          <MapPin className={`text-orange-500 mt-0.5 flex-shrink-0 ${compact ? "w-4 h-4" : "w-5 h-5"}`} />
           <div className="flex-1">
-            <p className="text-sm font-medium text-foreground">Alamat Terpilih:</p>
-            <p className="text-sm text-muted-foreground mt-1">
+            <p className={`font-medium text-foreground ${compact ? "text-xs" : "text-sm"}`}>Alamat Terpilih:</p>
+            <p className={`text-muted-foreground mt-1 ${compact ? "text-xs" : "text-sm"}`}>
               {isLoadingAddress ? (
                 <span className="inline-flex items-center gap-2">
-                  <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-orange-500"></div>
+                  <div className={`animate-spin rounded-full border-b-2 border-orange-500 ${compact ? "h-2.5 w-2.5" : "h-3 w-3"}`}></div>
                   Mendapatkan alamat...
                 </span>
               ) : (

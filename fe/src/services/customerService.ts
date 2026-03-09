@@ -195,16 +195,17 @@ export const updateCustomerProfile = async (data: {
 
 /**
  * Get avatar URL from storage path
+ * Returns the avatar URL or undefined if no avatar
  */
-export const getAvatarUrl = (avatarPath: string | null | undefined): string => {
+export const getAvatarUrl = (avatarPath: string | null | undefined): string | undefined => {
   console.log('[getAvatarUrl] Input avatarPath:', avatarPath);
   
   if (!avatarPath) {
-    console.log('[getAvatarUrl] No avatar path, returning default');
-    return '/default-avatar.png';
+    console.log('[getAvatarUrl] No avatar path, returning undefined');
+    return undefined;
   }
   
-  // If it's already a full URL, return as is
+  // If it's already a full URL (from Google OAuth), return as is
   if (avatarPath.startsWith('http://') || avatarPath.startsWith('https://')) {
     console.log('[getAvatarUrl] Already full URL:', avatarPath);
     return avatarPath;

@@ -18,6 +18,7 @@ class OrderController extends Controller
     public function customerOrders(Request $request)
     {
         $paginator = Order::where('CustomerID', $request->user()->CustomerID)
+                     ->where('hidden_from_customer', false)
                      ->with(['orderDetails.menu.activePromo', 'payment'])
                      ->orderBy('created_at', 'desc')
                      ->paginate($request->get('per_page', 10));
@@ -100,7 +101,10 @@ class OrderController extends Controller
             'items.*.quantity' => 'required|integer|min:1',
             'items.*.selected_variant' => 'nullable|string|max:100',
             'payment_method' => 'required|in:cash,cod,transfer,gopay,dana,ovo,linkaja,shopeepay,qris,bca,mandiri,bni,bri',
-            'notes' => 'nullable|string|max:500'
+            'notes' => 'nullable|string|max:500',
+            'delivery_address' => 'nullable|string',
+            'delivery_address_label' => 'nullable|string|max:255',
+            'delivery_address_notes' => 'nullable|string'
         ]);
         
         if ($validator->fails()) {
@@ -143,13 +147,24 @@ class OrderController extends Controller
                 ];
             }
             
+            // Get customer for default address
+            $customer = $request->user();
+            
+            // Use delivery address from request or fallback to customer's default address
+            $deliveryAddress = $request->delivery_address ?? $customer->address;
+            $deliveryAddressLabel = $request->delivery_address_label ?? $customer->address_label;
+            $deliveryAddressNotes = $request->delivery_address_notes ?? $customer->address_notes;
+            
             // Create order
             $order = Order::create([
-                'CustomerID' => $request->user()->CustomerID,
+                'CustomerID' => $customer->CustomerID,
                 'order_date' => now(),
                 'total_price' => $totalPrice,
                 'status' => 'pending',
-                'notes' => $request->notes
+                'notes' => $request->notes,
+                'delivery_address' => $deliveryAddress,
+                'delivery_address_label' => $deliveryAddressLabel,
+                'delivery_address_notes' => $deliveryAddressNotes
             ]);
             
             // Create order details
@@ -166,13 +181,12 @@ class OrderController extends Controller
             // Determine payment status based on method
             $paymentStatus = in_array($request->payment_method, ['cash', 'cod']) ? 'pending' : 'waiting_payment';
             
-            // Auto-generate payment details from customer data
-            $customer = $request->user();
+            // Auto-generate payment details from customer data (use delivery address for this order)
             $paymentDetails = [
                 'phone' => $customer->phone,
                 'account_name' => $customer->name,
                 'customer_email' => $customer->email,
-                'customer_address' => $customer->address
+                'customer_address' => $deliveryAddress
             ];
             
             // Create payment record
@@ -380,6 +394,77 @@ class OrderController extends Controller
             'success' => true,
             'message' => 'Order status updated successfully',
             'data' => $order->fresh(['orderDetails.menu', 'payment'])
+        ]);
+    }
+    
+    /**
+     * Hide order from customer view (soft delete for customer)
+     */
+    public function hideFromCustomer(Request $request, $id)
+    {
+        $order = Order::where('OrderID', $id)
+                     ->where('CustomerID', $request->user()->CustomerID)
+                     ->first();
+                     
+        if (!$order) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Order not found'
+            ], 404);
+        }
+        
+        $order->update(['hidden_from_customer' => true]);
+        
+        return response()->json([
+            'success' => true,
+            'message' => 'Order removed from your history'
+        ]);
+    }
+    
+    /**
+     * Reorder - create new order with same items
+     */
+    public function reorder(Request $request, $id)
+    {
+        $originalOrder = Order::where('OrderID', $id)
+                             ->where('CustomerID', $request->user()->CustomerID)
+                             ->with(['orderDetails.menu'])
+                             ->first();
+                             
+        if (!$originalOrder) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Original order not found'
+            ], 404);
+        }
+        
+        // Get items from original order
+        $items = [];
+        foreach ($originalOrder->orderDetails as $detail) {
+            if ($detail->menu && $detail->menu->is_available) {
+                $items[] = [
+                    'MenuID' => $detail->MenuID,
+                    'name' => $detail->menu->name,
+                    'price' => (float) $detail->menu->price,
+                    'quantity' => $detail->quantity,
+                    'selected_variant' => $detail->selected_variant,
+                    'image' => $detail->menu->image_url,
+                    'variants' => $detail->menu->variant ? json_decode($detail->menu->variant, true) : null,
+                ];
+            }
+        }
+        
+        if (empty($items)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No available menu items from this order'
+            ], 422);
+        }
+        
+        return response()->json([
+            'success' => true,
+            'message' => 'Items ready to add to cart',
+            'data' => ['items' => $items]
         ]);
     }
 }

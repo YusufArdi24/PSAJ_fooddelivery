@@ -18,11 +18,17 @@ interface ProfileDropdownProps {
 const ProfileDropdown = ({ userData, onLogout }: ProfileDropdownProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [imageError, setImageError] = useState(false);
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const dropdownRef = useRef<HTMLDivElement>(null);
   
   console.log('[ProfileDropdown] userData.avatar:', userData.avatar);
+
+  // Reset image error when avatar URL changes
+  useEffect(() => {
+    setImageError(false);
+  }, [userData.avatar]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -62,23 +68,28 @@ const ProfileDropdown = ({ userData, onLogout }: ProfileDropdownProps) => {
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center gap-2 pl-4 border-l border-border hover:bg-muted/50 rounded-lg transition-colors p-2"
       >
-        <div className="w-9 h-9 rounded-full bg-muted overflow-hidden">
-          {userData.avatar ? (
+        <div className="w-9 h-9 rounded-full bg-muted overflow-hidden flex items-center justify-center">
+          {userData.avatar && !imageError ? (
             <img 
               src={userData.avatar} 
               alt="Profile" 
               className="w-full h-full object-cover"
+              crossOrigin="anonymous"
               onError={(e) => {
-                e.currentTarget.style.display = 'none';
-                e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                console.error('[ProfileDropdown] Image failed to load:', userData.avatar);
+                setImageError(true);
+              }}
+              onLoad={() => {
+                console.log('[ProfileDropdown] Image loaded successfully:', userData.avatar);
               }}
             />
-          ) : null}
-          <div className={`w-full h-full bg-gradient-to-br from-primary/30 to-primary/10 flex items-center justify-center ${userData.avatar ? 'hidden' : ''}`}>
-            <span className="text-sm font-medium text-primary">
-              {userData.username?.charAt(0)?.toUpperCase() || "U"}
-            </span>
-          </div>
+          ) : (
+            <div className="w-full h-full bg-gradient-to-br from-primary/30 to-primary/10 flex items-center justify-center">
+              <span className="text-sm font-medium text-primary">
+                {userData.username?.charAt(0)?.toUpperCase() || "U"}
+              </span>
+            </div>
+          )}
         </div>
         <span className="hidden md:block text-sm font-medium text-foreground">
           {userData.username}
@@ -104,23 +115,28 @@ const ProfileDropdown = ({ userData, onLogout }: ProfileDropdownProps) => {
             {/* User Info Section */}
             <div className="p-4 border-b border-border bg-muted/20">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-muted overflow-hidden">
-                  {userData.avatar ? (
+                <div className="w-12 h-12 rounded-full bg-muted overflow-hidden flex items-center justify-center">
+                  {userData.avatar && !imageError ? (
                     <img 
                       src={userData.avatar} 
                       alt="Profile" 
                       className="w-full h-full object-cover"
+                      crossOrigin="anonymous"
                       onError={(e) => {
-                        e.currentTarget.style.display = 'none';
-                        e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                        console.error('[ProfileDropdown-Dropdown] Image failed to load:', userData.avatar);
+                        setImageError(true);
+                      }}
+                      onLoad={() => {
+                        console.log('[ProfileDropdown-Dropdown] Image loaded successfully:', userData.avatar);
                       }}
                     />
-                  ) : null}
-                  <div className={`w-full h-full bg-gradient-to-br from-primary/30 to-primary/10 flex items-center justify-center ${userData.avatar ? 'hidden' : ''}`}>
-                    <span className="text-lg font-medium text-primary">
-                      {userData.username?.charAt(0)?.toUpperCase() || "U"}
-                    </span>
-                  </div>
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-br from-primary/30 to-primary/10 flex items-center justify-center">
+                      <span className="text-lg font-medium text-primary">
+                        {userData.username?.charAt(0)?.toUpperCase() || "U"}
+                      </span>
+                    </div>
+                  )}
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-foreground truncate">

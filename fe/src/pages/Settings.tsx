@@ -15,7 +15,6 @@ import LeafletLocationPicker from "../components/LeafletLocationPicker";
 
 interface FormData {
   fullName: string;
-  email: string;
   phoneNumber: string;
   address: string;
   labelAlamat: string;
@@ -24,7 +23,6 @@ interface FormData {
 
 interface FormErrors {
   fullName?: string;
-  email?: string;
   address?: string;
   labelAlamat?: string;
   catatan?: string;
@@ -37,7 +35,6 @@ export default function Settings() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [formData, setFormData] = useState<FormData>({
     fullName: "",
-    email: "",
     phoneNumber: "",
     address: "",
     labelAlamat: "",
@@ -73,7 +70,6 @@ export default function Settings() {
       : loadedRawAddress;
     setFormData({
       fullName: user.name || "",
-      email: user.email || "",
       phoneNumber: user.phone || "",
       address: loadedCleanAddress,
       labelAlamat: user.address_label || "",
@@ -127,12 +123,6 @@ export default function Settings() {
 
     if (!formData.fullName.trim()) {
       newErrors.fullName = "Nama lengkap wajib diisi";
-    }
-
-    if (!formData.email.trim()) {
-      newErrors.email = "Email wajib diisi";
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = "Masukkan email yang valid";
     }
 
     if (!formData.address.trim()) {
@@ -242,7 +232,6 @@ export default function Settings() {
       // Save general profile
       const result = await updateCustomerProfile({
         name: formData.fullName,
-        email: formData.email,
         phone: formData.phoneNumber,
         address: formData.address,
       });
@@ -299,7 +288,6 @@ export default function Settings() {
         : cancelRaw;
       setFormData({
         fullName: user.name || "",
-        email: user.email || "",
         phoneNumber: user.phone || "",
         address: cancelCleanAddress,
         labelAlamat: user.address_label || "",
@@ -431,9 +419,9 @@ export default function Settings() {
   }
 
   return (
-    <div className="flex h-screen bg-background">
+    <div className="flex h-screen overflow-hidden bg-background">
       {/* Desktop Sidebar - Hidden on mobile */}
-      <div className="hidden lg:block">
+      <div className="hidden lg:block flex-shrink-0">
         <Sidebar activeItem={activeItem} onItemClick={handleItemClick} />
       </div>
       
@@ -482,9 +470,12 @@ export default function Settings() {
                                     src={profileImage}
                                     alt="Profile"
                                     className="w-20 h-20 rounded-full object-cover border-4 border-border"
+                                    crossOrigin="anonymous"
                                     onError={(e) => {
                                       console.error('[Settings] Avatar image failed to load:', profileImage);
                                       console.error('[Settings] Error event:', e);
+                                      // Fallback to placeholder
+                                      setProfileImage(null);
                                     }}
                                     onLoad={() => {
                                       console.log('[Settings] Avatar image loaded successfully:', profileImage);
@@ -565,25 +556,6 @@ export default function Settings() {
                           />
                           {errors.fullName && (
                             <p className="text-red-500 text-xs mt-2">{errors.fullName}</p>
-                          )}
-                        </div>
-
-                        {/* Email */}
-                        <div>
-                          <Label htmlFor="email" className="text-sm font-medium text-foreground mb-3 block">
-                            Email
-                          </Label>
-                          <Input
-                            id="email"
-                            name="email"
-                            type="email"
-                            value={formData.email}
-                            onChange={handleChange}
-                            className={`h-12 ${errors.email ? "border-red-500" : ""}`}
-                            placeholder="Enter your email address"
-                          />
-                          {errors.email && (
-                            <p className="text-red-500 text-xs mt-2">{errors.email}</p>
                           )}
                         </div>
 
