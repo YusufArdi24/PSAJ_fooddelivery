@@ -3,7 +3,6 @@
 namespace App\Filament\Admin\Resources\Promos\Schemas;
 
 use Filament\Forms\Components\DatePicker;
-use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\Toggle;
@@ -60,12 +59,6 @@ class PromoForm
                     ->numeric()
                     ->minValue(0)
                     ->helperText('Masukkan angka saja (tanpa % atau Rp)'),
-                TextInput::make('max_discount')
-                    ->label('Maksimal Diskon (opsional)')
-                    ->numeric()
-                    ->prefix('Rp ')
-                    ->minValue(0)
-                    ->helperText('Hanya untuk tipe persentase. Batas maksimal potongan harga'),
                 DatePicker::make('start_date')
                     ->label('Tanggal Mulai')
                     ->required()
@@ -75,13 +68,6 @@ class PromoForm
                     ->required()
                     ->native(false)
                     ->after('start_date'),
-                FileUpload::make('image')
-                    ->label('Banner Promo (opsional)')
-                    ->image()
-                    ->disk('public')
-                    ->directory('promo-images')
-                    ->visibility('public')
-                    ->columnSpanFull(),
                 Toggle::make('is_active')
                     ->label('Aktif')
                     ->default(true)

@@ -26,6 +26,9 @@ interface FrontendMenuItem {
   promoTitle?: string;
   // Variant options
   variants?: string[];
+  // Recommendation fields
+  isPopular?: boolean;
+  isRecommended?: boolean;
 }
 
 interface MenuContextType {
@@ -144,6 +147,20 @@ export const MenuProvider: React.FC<MenuProviderProps> = ({ children }) => {
         menu.description.toLowerCase().includes(query)
       );
     }
+    
+    // Sort: Menu populer hari ini first, then rekomendasi, then the rest
+    filtered = filtered.sort((a, b) => {
+      // Priority 1: Popular menu (highest priority)
+      if (a.isPopular && !b.isPopular) return -1;
+      if (!a.isPopular && b.isPopular) return 1;
+      
+      // Priority 2: Recommended menu
+      if (a.isRecommended && !b.isRecommended) return -1;
+      if (!a.isRecommended && b.isRecommended) return 1;
+      
+      // If both have same priority, maintain original order
+      return 0;
+    });
     
     return filtered;
   }, [menus, selectedCategory, searchQuery]);

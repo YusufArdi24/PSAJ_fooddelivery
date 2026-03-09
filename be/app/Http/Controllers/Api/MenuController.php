@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Menu;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class MenuController extends Controller
 {
@@ -24,9 +25,22 @@ class MenuController extends Controller
         
         $menus = $query->paginate($request->get('per_page', 10));
         
-        // Add promo info to each menu
-        $menus->getCollection()->transform(function ($menu) {
-            return $this->appendPromoInfo($menu);
+        // Get popular and recommended menu IDs
+        $popularMenuId = $this->getTodayPopularMenuId();
+        $recommendedMenuIds = [];
+        
+        // Get customer ID from authorization header if available
+        $user = $request->user('sanctum');
+        if ($user) {
+            $recommendedMenuIds = $this->getRecommendedMenuIds($user->CustomerID);
+        }
+        
+        // Add promo info and recommendation flags to each menu
+        $menus->getCollection()->transform(function ($menu) use ($popularMenuId, $recommendedMenuIds) {
+            $menu = $this->appendPromoInfo($menu);
+            $menu->is_popular_today = ($menu->MenuID === $popularMenuId);
+            $menu->is_recommended_today = in_array($menu->MenuID, $recommendedMenuIds);
+            return $menu;
         });
         
         return response()->json([
@@ -53,9 +67,25 @@ class MenuController extends Controller
             ], 404);
         }
         
+        // Get popular and recommended menu IDs
+        $popularMenuId = $this->getTodayPopularMenuId();
+        $recommendedMenuIds = [];
+        
+        // Get customer ID from authorization header if available
+        if ($request = request()) {
+            $user = $request->user('sanctum');
+            if ($user) {
+                $recommendedMenuIds = $this->getRecommendedMenuIds($user->CustomerID);
+            }
+        }
+        
+        $menu = $this->appendPromoInfo($menu);
+        $menu->is_popular_today = ($menu->MenuID === $popularMenuId);
+        $menu->is_recommended_today = in_array($menu->MenuID, $recommendedMenuIds);
+        
         return response()->json([
             'success' => true,
-            'data' => $this->appendPromoInfo($menu)
+            'data' => $menu
         ]);
     }
     
@@ -65,8 +95,23 @@ class MenuController extends Controller
                     ->with(['admin', 'activePromo'])
                     ->get();
         
-        $menus->transform(function ($menu) {
-            return $this->appendPromoInfo($menu);
+        // Get popular and recommended menu IDs
+        $popularMenuId = $this->getTodayPopularMenuId();
+        $recommendedMenuIds = [];
+        
+        // Get customer ID from authorization header if available
+        if ($request = request()) {
+            $user = $request->user('sanctum');
+            if ($user) {
+                $recommendedMenuIds = $this->getRecommendedMenuIds($user->CustomerID);
+            }
+        }
+        
+        $menus->transform(function ($menu) use ($popularMenuId, $recommendedMenuIds) {
+            $menu = $this->appendPromoInfo($menu);
+            $menu->is_popular_today = ($menu->MenuID === $popularMenuId);
+            $menu->is_recommended_today = in_array($menu->MenuID, $recommendedMenuIds);
+            return $menu;
         });
                     
         return response()->json([
@@ -88,8 +133,21 @@ class MenuController extends Controller
                     ->orderBy('created_at', 'desc')
                     ->get();
         
-        $menus->transform(function ($menu) {
-            return $this->appendPromoInfo($menu);
+        // Get popular and recommended menu IDs
+        $popularMenuId = $this->getTodayPopularMenuId();
+        $recommendedMenuIds = [];
+        
+        // Get customer ID from authorization header if available
+        $user = $request->user('sanctum');
+        if ($user) {
+            $recommendedMenuIds = $this->getRecommendedMenuIds($user->CustomerID);
+        }
+        
+        $menus->transform(function ($menu) use ($popularMenuId, $recommendedMenuIds) {
+            $menu = $this->appendPromoInfo($menu);
+            $menu->is_popular_today = ($menu->MenuID === $popularMenuId);
+            $menu->is_recommended_today = in_array($menu->MenuID, $recommendedMenuIds);
+            return $menu;
         });
                     
         return response()->json([
@@ -119,8 +177,21 @@ class MenuController extends Controller
                            ->orderBy('updated_at', 'desc')
                            ->get();
         
-        $updatedMenus->transform(function ($menu) {
-            return $this->appendPromoInfo($menu);
+        // Get popular and recommended menu IDs
+        $popularMenuId = $this->getTodayPopularMenuId();
+        $recommendedMenuIds = [];
+        
+        // Get customer ID from authorization header if available
+        $user = $request->user('sanctum');
+        if ($user) {
+            $recommendedMenuIds = $this->getRecommendedMenuIds($user->CustomerID);
+        }
+        
+        $updatedMenus->transform(function ($menu) use ($popularMenuId, $recommendedMenuIds) {
+            $menu = $this->appendPromoInfo($menu);
+            $menu->is_popular_today = ($menu->MenuID === $popularMenuId);
+            $menu->is_recommended_today = in_array($menu->MenuID, $recommendedMenuIds);
+            return $menu;
         });
                            
         return response()->json([
@@ -165,5 +236,76 @@ class MenuController extends Controller
         unset($menu->activePromo);
         
         return $menu;
+    }
+    
+    /**
+     * Get today's most popular menu based on order count
+     * Returns the MenuID of the most ordered menu today
+     */
+    private function getTodayPopularMenuId()
+    {
+        $popularMenu = DB::table('order_details')
+            ->join('orders', 'order_details.OrderID', '=', 'orders.OrderID')
+            ->join('menus', 'order_details.MenuID', '=', 'menus.MenuID')
+            ->whereDate('orders.order_date', now()->toDateString())
+            ->where('menus.is_available', true)
+            ->select('order_details.MenuID', DB::raw('SUM(order_details.quantity) as total_orders'))
+            ->groupBy('order_details.MenuID')
+            ->orderByDesc('total_orders')
+            ->first();
+        
+        return $popularMenu ? $popularMenu->MenuID : null;
+    }
+    
+    /**
+     * Get recommended menu IDs for a customer using Collaborative Filtering
+     * Based on: "Users who bought the same items also bought these"
+     * 
+     * @param int $customerId
+     * @return array Array of recommended MenuIDs
+     */
+    private function getRecommendedMenuIds($customerId)
+    {
+        // Step 1: Get items that this customer has ordered
+        $customerMenus = DB::table('order_details')
+            ->join('orders', 'order_details.OrderID', '=', 'orders.OrderID')
+            ->where('orders.CustomerID', $customerId)
+            ->distinct()
+            ->pluck('order_details.MenuID')
+            ->toArray();
+        
+        if (empty($customerMenus)) {
+            return [];
+        }
+        
+        // Step 2: Find other customers who ordered the same items
+        $similarCustomers = DB::table('order_details')
+            ->join('orders', 'order_details.OrderID', '=', 'orders.OrderID')
+            ->whereIn('order_details.MenuID', $customerMenus)
+            ->where('orders.CustomerID', '!=', $customerId)
+            ->distinct()
+            ->pluck('orders.CustomerID')
+            ->toArray();
+        
+        if (empty($similarCustomers)) {
+            return [];
+        }
+        
+        // Step 3: Find what else those similar customers ordered
+        // that the current customer hasn't ordered yet
+        $recommendations = DB::table('order_details')
+            ->join('orders', 'order_details.OrderID', '=', 'orders.OrderID')
+            ->join('menus', 'order_details.MenuID', '=', 'menus.MenuID')
+            ->whereIn('orders.CustomerID', $similarCustomers)
+            ->whereNotIn('order_details.MenuID', $customerMenus)
+            ->where('menus.is_available', true)
+            ->select('order_details.MenuID', DB::raw('COUNT(DISTINCT orders.CustomerID) as customer_count'))
+            ->groupBy('order_details.MenuID')
+            ->orderByDesc('customer_count')
+            ->limit(3) // Top 3 recommendations
+            ->pluck('MenuID')
+            ->toArray();
+        
+        return $recommendations;
     }
 }

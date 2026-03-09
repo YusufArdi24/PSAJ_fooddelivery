@@ -3,14 +3,14 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "../components/ui/button";
 import { Card, CardContent } from "../components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
-import { ChefHat } from "lucide-react";
+import { ChefHat, Trash2 } from "lucide-react";
 import Sidebar from "../components/Sidebar";
 import Header from "../components/Header";
 import MobileSidebar from "../components/MobileSidebar";
 import { useAuth } from "../contexts/AuthContext";
 import { useNotification } from "../contexts/NotificationContext";
 import { toast } from "../components/ui/use-toast";
-import { getCustomerOrders, getOrderStatusText, getOrderStatusColor } from "../services/orderService";
+import { getCustomerOrders, getOrderStatusText, getOrderStatusColor, hideOrder, reorder } from "../services/orderService";
 import { getAvatarUrl } from "../services/customerService";
 
 interface OrderItem {
@@ -63,6 +63,8 @@ export default function OrderHistory() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [orders, setOrders] = useState<OrderItem[]>([]);
   const [isLoadingOrders, setIsLoadingOrders] = useState(true);
+  const [deletingOrderId, setDeletingOrderId] = useState<number | null>(null);
+  const [reorderingOrderId, setReorderingOrderId] = useState<number | null>(null);
 
   // Authentication check
   useEffect(() => {
@@ -143,6 +145,70 @@ export default function OrderHistory() {
       console.error('Logout error:', error);
       // Navigate anyway
       navigate("/signin");
+    }
+  };
+
+  const handleDeleteOrder = async (orderId: number) => {
+    if (!confirm("Yakin ingin menghapus pesanan ini dari riwayat Anda?")) {
+      return;
+    }
+
+    setDeletingOrderId(orderId);
+    try {
+      const result = await hideOrder(orderId);
+      if (result.success) {
+        // Remove order from local state
+        setOrders(prevOrders => prevOrders.filter(order => order.OrderID !== orderId));
+        toast({
+          title: "Pesanan dihapus",
+          description: "Pesanan berhasil dihapus dari riwayat Anda.",
+        });
+      } else {
+        toast({
+          title: "Gagal menghapus",
+          description: result.message || "Terjadi kesalahan saat menghapus pesanan.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error deleting order:", error);
+      toast({
+        title: "Gagal menghapus",
+        description: "Terjadi kesalahan saat menghapus pesanan.",
+        variant: "destructive",
+      });
+    } finally {
+      setDeletingOrderId(null);
+    }
+  };
+
+  const handleReorder = async (orderId: number) => {
+    setReorderingOrderId(orderId);
+    try {
+      const result = await reorder(orderId);
+      if (result.success && result.data?.items) {
+        // Navigate to dashboard with cart items
+        navigate("/dashboard", { state: { reorderItems: result.data.items, openCart: true } });
+        toast({
+          title: "Pesanan ditambahkan!",
+          description: "Item pesanan telah ditambahkan ke keranjang.",
+        });
+      } else {
+        toast({
+          title: "Gagal memesan lagi",
+          description: result.message || "Beberapa menu mungkin sudah tidak tersedia.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error reordering:", error);
+      toast({
+        title: "Gagal memesan lagi",
+        description: "Terjadi kesalahan saat memesan lagi.",
+        variant: "destructive",
+      });
+    } finally {
+      setReorderingOrderId(null);
     }
   };
 
@@ -257,14 +323,14 @@ export default function OrderHistory() {
       {/* Mobile Sidebar */}
       <MobileSidebar activeItem={activeNav} onItemClick={handleItemClick} isOpen={mobileMenuOpen} onOpenChange={setMobileMenuOpen} />
 
-      <div className="flex overflow-x-hidden">
+      <div className="flex h-screen overflow-hidden">
         {/* Desktop Sidebar */}
-        <div className="hidden lg:block">
+        <div className="hidden lg:block flex-shrink-0">
           <Sidebar activeItem={activeNav} onItemClick={handleItemClick} />
         </div>
 
         {/* Main Content */}
-        <main className="flex-1 min-w-0 min-h-screen">
+        <main className="flex-1 min-w-0 flex flex-col overflow-hidden">
           {/* Spacer for mobile header */}
           {/* Header */}
           <Header 
@@ -280,8 +346,10 @@ export default function OrderHistory() {
             onMobileMenuOpen={() => setMobileMenuOpen(true)}
           />
 
-          {/* Page Content */}
-          <div className="p-4 lg:p-6">
+          {/* Scrollable content area */}
+          <div className="flex-1 overflow-y-auto">
+            {/* Page Content */}
+            <div className="p-4 lg:p-6">
             {/* Page Header */}
             <div className="flex items-center justify-between mb-6">
               <h1 className="text-2xl font-bold text-foreground">Riwayat Pesanan</h1>
@@ -352,8 +420,23 @@ export default function OrderHistory() {
                                     {formatDate(order.order_date)}
                                   </p>
                                 </div>
-                                <div className={`px-2 py-1 rounded-full text-xs font-semibold text-white flex-shrink-0 ${getOrderStatusColor(order.status)}`}>
-                                  {getOrderStatusText(order.status)}
+                                <div className="flex items-center gap-2">
+                                  <div className={`px-2 py-1 rounded-full text-xs font-semibold text-white flex-shrink-0 ${getOrderStatusColor(order.status)}`}>
+                                    {getOrderStatusText(order.status)}
+                                  </div>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleDeleteOrder(order.OrderID)}
+                                    disabled={deletingOrderId === order.OrderID}
+                                    className="h-8 w-8 p-0 hover:bg-red-50 hover:text-red-600"
+                                  >
+                                    {deletingOrderId === order.OrderID ? (
+                                      <Loader2 className="h-4 w-4 animate-spin" />
+                                    ) : (
+                                      <Trash2 className="h-4 w-4" />
+                                    )}
+                                  </Button>
                                 </div>
                               </div>
 
@@ -465,9 +548,13 @@ export default function OrderHistory() {
                               {/* Action Buttons */}
                               <div className="flex gap-3 mt-auto pt-0">
                                 <Button
-                                  onClick={() => navigate("/dashboard")}
-                                  className="flex-1 bg-orange-500 hover:bg-orange-600 text-white"
+                                  onClick={() => handleReorder(order.OrderID)}
+                                  disabled={reorderingOrderId === order.OrderID}
+                                  className="flex-1 bg-orange-500 hover:bg-orange-600 text-white disabled:opacity-50"
                                 >
+                                  {reorderingOrderId === order.OrderID ? (
+                                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                  ) : null}
                                   Pesan Lagi
                                 </Button>
                               </div>
@@ -481,6 +568,7 @@ export default function OrderHistory() {
               ))}
             </div>
           )}
+            </div>
           </div>
         </main>
       </div>

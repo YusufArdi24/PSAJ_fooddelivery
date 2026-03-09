@@ -104,6 +104,8 @@ Route::prefix('v1')->group(function () {
         Route::post('/orders', [OrderController::class, 'store']);
         Route::get('/orders/{id}', [OrderController::class, 'show']);
         Route::put('/orders/{id}/cancel', [OrderController::class, 'cancel']);
+        Route::delete('/orders/{id}/hide', [OrderController::class, 'hideFromCustomer']);
+        Route::post('/orders/{id}/reorder', [OrderController::class, 'reorder']);
         
         // Notification routes for customers
         Route::get('/notifications', [NotificationController::class, 'index']);

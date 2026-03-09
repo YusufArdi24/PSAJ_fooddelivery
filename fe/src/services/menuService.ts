@@ -43,6 +43,9 @@ export interface MenuItem {
   display_price?: number;
   // Variant options set by admin
   variants?: string[];
+  // Recommendation fields
+  is_popular_today?: boolean;
+  is_recommended_today?: boolean;
 }
 
 export interface MenuListResponse {
@@ -194,5 +197,8 @@ export const convertMenuToFrontendFormat = (menu: MenuItem) => {
     promoTitle: menu.promo?.title,
     // Variant options
     variants: menu.variants || [],
+    // Recommendation fields
+    isPopular: menu.is_popular_today || false,
+    isRecommended: menu.is_recommended_today || false,
   };
 };

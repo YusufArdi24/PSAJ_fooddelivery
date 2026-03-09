@@ -26,20 +26,34 @@ class OrderForm
                             ->searchable()
                             ->disabled(fn ($record) => $record !== null)
                             ->reactive()
-                            ->afterStateUpdated(function ($state, callable $set, callable $get) {
-                                if ($state) {
+                            ->afterStateUpdated(function ($state, callable $set, callable $get, $record) {
+                                if ($state && !$record) {
+                                    // Only set customer's default address when creating new order
                                     $customer = Customer::find($state);
                                     if ($customer) {
-                                        $set('customer_address_display', $customer->address);
+                                        $set('delivery_address', $customer->address);
+                                        $set('delivery_address_label', $customer->address_label);
+                                        $set('delivery_address_notes', $customer->address_notes);
                                         $set('customer_phone_display', $customer->phone);
                                     }
                                 }
                             }),
-                        TextInput::make('customer_address_display')
+                        Textarea::make('delivery_address')
                             ->label('Alamat Pengantaran')
-                            ->disabled()
-                            ->dehydrated(false)
-                            ->columnSpanFull(),
+                            ->disabled(fn ($record) => $record !== null)
+                            ->dehydrated()
+                            ->columnSpanFull()
+                            ->rows(2),
+                        TextInput::make('delivery_address_label')
+                            ->label('Label Alamat')
+                            ->disabled(fn ($record) => $record !== null)
+                            ->dehydrated(),
+                        Textarea::make('delivery_address_notes')
+                            ->label('Catatan Alamat')
+                            ->disabled(fn ($record) => $record !== null)
+                            ->dehydrated()
+                            ->columnSpanFull()
+                            ->rows(2),
                         TextInput::make('customer_phone_display')
                             ->label('No. Telepon Customer')
                             ->disabled()
@@ -76,12 +90,9 @@ class OrderForm
                         Select::make('status')
                             ->label('Status Order')
                             ->options([
-                                'pending' => 'Pending',
-                                'confirmed' => 'Confirmed',
-                                'preparing' => 'Preparing',
-                                'ready' => 'Ready',
-                                'delivered' => 'Delivered',
-                                'cancelled' => 'Cancelled',
+                                'pending' => 'Pending (Menunggu)',
+                                'confirmed' => 'Dikonfirmasi',
+                                'delivered' => 'Diantar / Selesai',
                             ])
                             ->default('pending')
                             ->required(),
@@ -115,16 +126,17 @@ class OrderForm
                                 $grandDiscount = 0;
                                 $hasDiscount = false;
                                 
-                                $html = '<div class="overflow-x-auto">';
-                                $html .= '<table style="width: 100%; border-collapse: collapse; border: 2px solid #e5e7eb;">';
+                                $html = '<div style="overflow-x: auto; max-width: 100%; -webkit-overflow-scrolling: touch;">';
+                                $html .= '<table style="min-width: 900px; width: 100%; border-collapse: collapse; border: 2px solid #e5e7eb; table-layout: auto;">';
                                 $html .= '<thead>';
                                 $html .= '<tr style="background: linear-gradient(to right, #3b82f6, #2563eb); color: white;">';
-                                $html .= '<th style="width: 35%; text-align: left; padding: 16px; font-weight: bold; border-right: 1px solid rgba(255,255,255,0.2);">Menu</th>';
-                                $html .= '<th style="width: 15%; text-align: left; padding: 16px; font-weight: bold; border-right: 1px solid rgba(255,255,255,0.2);">Varian</th>';
-                                $html .= '<th style="width: 10%; text-align: center; padding: 16px; font-weight: bold; border-right: 1px solid rgba(255,255,255,0.2);">Jumlah</th>';
-                                $html .= '<th style="width: 20%; text-align: right; padding: 16px; font-weight: bold; border-right: 1px solid rgba(255,255,255,0.2);">Harga Normal</th>';
-                                $html .= '<th style="width: 10%; text-align: right; padding: 16px; font-weight: bold; border-right: 1px solid rgba(255,255,255,0.2);">Diskon</th>';
-                                $html .= '<th style="width: 10%; text-align: right; padding: 16px; font-weight: bold;">Total</th>';
+                                $html .= '<th style="text-align: left; padding: 12px; font-weight: bold; border-right: 1px solid rgba(255,255,255,0.2); white-space: nowrap;">Menu</th>';
+                                $html .= '<th style="text-align: left; padding: 12px; font-weight: bold; border-right: 1px solid rgba(255,255,255,0.2); white-space: nowrap;">Varian</th>';
+                                $html .= '<th style="text-align: right; padding: 12px; font-weight: bold; border-right: 1px solid rgba(255,255,255,0.2); white-space: nowrap;">Harga Satuan</th>';
+                                $html .= '<th style="text-align: center; padding: 12px; font-weight: bold; border-right: 1px solid rgba(255,255,255,0.2); white-space: nowrap;">Qty</th>';
+                                $html .= '<th style="text-align: right; padding: 12px; font-weight: bold; border-right: 1px solid rgba(255,255,255,0.2); white-space: nowrap;">Subtotal</th>';
+                                $html .= '<th style="text-align: right; padding: 12px; font-weight: bold; border-right: 1px solid rgba(255,255,255,0.2); white-space: nowrap;">Diskon</th>';
+                                $html .= '<th style="text-align: right; padding: 12px; font-weight: bold; white-space: nowrap;">Total</th>';
                                 $html .= '</tr>';
                                 $html .= '</thead>';
                                 $html .= '<tbody>';
@@ -149,43 +161,47 @@ class OrderForm
                                     if ($discountPerItem > 0) $hasDiscount = true;
 
                                     $html .= '<tr style="border-bottom: 1px solid #e5e7eb; background-color: white;">';
-                                    $html .= '<td style="padding: 16px; font-weight: 500; color: #111827; border-right: 1px solid #e5e7eb;">' . htmlspecialchars($detail->menu_name ?? ($detail->menu?->name) ?? 'Menu tidak ditemukan') . '</td>';
+                                    $html .= '<td style="padding: 12px; font-weight: 500; color: #111827; border-right: 1px solid #e5e7eb;">' . htmlspecialchars($detail->menu_name ?? ($detail->menu?->name) ?? 'Menu tidak ditemukan') . '</td>';
                                     // Varian
                                     $variantLabel = $detail->selected_variant
                                         ? '<span style="display:inline-block;background:#fff7ed;color:#c2410c;border:1px solid #fed7aa;border-radius:9999px;padding:2px 10px;font-size:12px;font-weight:600;">' . htmlspecialchars($detail->selected_variant) . '</span>'
                                         : '<span style="color:#9ca3af;font-size:12px;">-</span>';
-                                    $html .= '<td style="padding: 16px; border-right: 1px solid #e5e7eb;">' . $variantLabel . '</td>';
-                                    $html .= '<td style="padding: 16px; text-align: center; font-weight: 600; color: #374151; border-right: 1px solid #e5e7eb;">' . $detail->quantity . '</td>';
+                                    $html .= '<td style="padding: 12px; border-right: 1px solid #e5e7eb;">' . $variantLabel . '</td>';
+                                    // Harga Satuan (original price per item before discount)
+                                    $html .= '<td style="padding: 12px; text-align: right; color: #374151; font-weight: 500; border-right: 1px solid #e5e7eb; white-space: nowrap;">Rp ' . number_format($originalPrice, 0, ',', '.') . '</td>';
+                                    $html .= '<td style="padding: 12px; text-align: center; font-weight: 600; color: #374151; border-right: 1px solid #e5e7eb;">' . $detail->quantity . '</td>';
 
-                                    // Harga Normal
+                                    // Subtotal (without strikethrough)
+                                    $html .= '<td style="padding: 12px; text-align: right; color: #374151; border-right: 1px solid #e5e7eb; white-space: nowrap;">Rp ' . number_format($subtotalOriginal, 0, ',', '.') . '</td>';
+                                    
+                                    // Diskon
                                     if ($discountPerItem > 0) {
-                                        $html .= '<td style="padding: 16px; text-align: right; color: #6b7280; text-decoration: line-through; border-right: 1px solid #e5e7eb;">Rp ' . number_format($subtotalOriginal, 0, ',', '.') . '</td>';
-                                        $html .= '<td style="padding: 16px; text-align: right; color: #dc2626; font-weight: 600; border-right: 1px solid #e5e7eb;">- Rp ' . number_format($subtotalDiscount, 0, ',', '.') . '</td>';
-                                        $html .= '<td style="padding: 16px; text-align: right; font-weight: bold; color: #16a34a;">Rp ' . number_format($subtotal, 0, ',', '.') . '</td>';
+                                        $html .= '<td style="padding: 12px; text-align: right; color: #dc2626; font-weight: 600; border-right: 1px solid #e5e7eb; white-space: nowrap;">- Rp ' . number_format($subtotalDiscount, 0, ',', '.') . '</td>';
                                     } else {
-                                        $html .= '<td style="padding: 16px; text-align: right; color: #374151; border-right: 1px solid #e5e7eb;">Rp ' . number_format($subtotalOriginal, 0, ',', '.') . '</td>';
-                                        $html .= '<td style="padding: 16px; text-align: right; color: #9ca3af; border-right: 1px solid #e5e7eb;">-</td>';
-                                        $html .= '<td style="padding: 16px; text-align: right; font-weight: bold; color: #111827;">Rp ' . number_format($subtotal, 0, ',', '.') . '</td>';
+                                        $html .= '<td style="padding: 12px; text-align: right; color: #9ca3af; border-right: 1px solid #e5e7eb;">-</td>';
                                     }
+                                    
+                                    // Total
+                                    $html .= '<td style="padding: 12px; text-align: right; font-weight: bold; color: #16a34a; white-space: nowrap;">Rp ' . number_format($subtotal, 0, ',', '.') . '</td>';
                                     $html .= '</tr>';
                                 }
                                 
-                                    // Grand total summary rows
-                                    if ($hasDiscount) {
-                                        $html .= '<tr style="background-color: #fafafa; border-top: 2px solid #e5e7eb;">';
-                                        $html .= '<td colspan="5" style="padding: 12px 16px; text-align: right; color: #374151; font-size: 14px;">Subtotal (Harga Normal):</td>';
-                                        $html .= '<td style="padding: 12px 16px; text-align: right; color: #374151; text-decoration: line-through;">Rp ' . number_format($grandOriginal, 0, ',', '.') . '</td>';
-                                        $html .= '</tr>';
-                                        $html .= '<tr style="background-color: #fff5f5;">';
-                                        $html .= '<td colspan="5" style="padding: 12px 16px; text-align: right; color: #dc2626; font-size: 14px;">Total Diskon:</td>';
-                                        $html .= '<td style="padding: 12px 16px; text-align: right; color: #dc2626; font-weight: bold;">- Rp ' . number_format($grandDiscount, 0, ',', '.') . '</td>';
-                                        $html .= '</tr>';
-                                    }
+                                // Grand total summary rows
+                                if ($hasDiscount) {
+                                    $html .= '<tr style="background-color: #fef2f2;">';
+                                    $html .= '<td colspan="6" style="padding: 12px 16px; text-align: right; color: #374151; font-size: 14px;">Subtotal (Harga Normal):</td>';
+                                    $html .= '<td style="padding: 12px 16px; text-align: right; color: #374151; font-weight: 600; white-space: nowrap;">Rp ' . number_format($grandOriginal, 0, ',', '.') . '</td>';
+                                    $html .= '</tr>';
+                                    $html .= '<tr style="background-color: #fff5f5;">';
+                                    $html .= '<td colspan="6" style="padding: 12px 16px; text-align: right; color: #dc2626; font-size: 14px;">Total Diskon:</td>';
+                                    $html .= '<td style="padding: 12px 16px; text-align: right; color: #dc2626; font-weight: bold; white-space: nowrap;">- Rp ' . number_format($grandDiscount, 0, ',', '.') . '</td>';
+                                    $html .= '</tr>';
+                                }
 
                                 // Grand total
                                 $html .= '<tr style="background: linear-gradient(to right, #f0fdf4, #dcfce7); border-top: 4px solid #22c55e;">';
-                                $html .= '<td colspan="5" style="padding: 16px; text-align: right; font-weight: bold; color: #111827; font-size: 18px;">TOTAL KESELURUHAN:</td>';
-                                $html .= '<td style="padding: 16px; text-align: right; font-weight: bold; color: #16a34a; font-size: 24px;">Rp ' . number_format($grandTotal, 0, ',', '.') . '</td>';
+                                $html .= '<td colspan="6" style="padding: 16px; text-align: right; font-weight: bold; color: #111827; font-size: 18px;">TOTAL KESELURUHAN:</td>';
+                                $html .= '<td style="padding: 16px; text-align: right; font-weight: bold; color: #16a34a; font-size: 24px; white-space: nowrap;">Rp ' . number_format($grandTotal, 0, ',', '.') . '</td>';
                                 $html .= '</tr>';
                                 
                                 $html .= '</tbody>';
@@ -237,14 +253,26 @@ class OrderForm
                                 $html .= '</div>';
                                 $html .= '</div>';
                                 
-                                // Customer Info
+                                // Customer Info with Delivery Address
                                 $html .= '<div class="mb-4 pb-4 border-b-2 border-dashed border-gray-400">';
                                 $html .= '<div class="text-sm font-bold text-gray-800 mb-2">CUSTOMER:</div>';
                                 $html .= '<div class="text-sm">';
                                 $html .= '<div class="mb-1"><span class="font-semibold">Nama:</span> ' . htmlspecialchars($customer->name) . '</div>';
                                 $html .= '<div class="mb-1"><span class="font-semibold">Telepon:</span> ' . htmlspecialchars($customer->phone) . '</div>';
                                 $html .= '<div><span class="font-semibold">Alamat Pengantaran:</span></div>';
-                                $html .= '<div class="ml-4 text-gray-700 whitespace-pre-wrap">' . htmlspecialchars($customer->address) . '</div>';
+                                
+                                // Use delivery address from order, fallback to customer default
+                                $deliveryAddress = $record->delivery_address ?? $customer->address;
+                                $deliveryLabel = $record->delivery_address_label ?? '';
+                                $deliveryNotes = $record->delivery_address_notes ?? '';
+                                
+                                if ($deliveryLabel) {
+                                    $html .= '<div class="ml-4 text-orange-600 font-semibold text-xs mb-1">' . htmlspecialchars($deliveryLabel) . '</div>';
+                                }
+                                $html .= '<div class="ml-4 text-gray-700 whitespace-pre-wrap">' . htmlspecialchars($deliveryAddress) . '</div>';
+                                if ($deliveryNotes) {
+                                    $html .= '<div class="ml-4 text-gray-600 text-xs italic mt-1">Catatan: ' . htmlspecialchars($deliveryNotes) . '</div>';
+                                }
                                 $html .= '</div>';
                                 $html .= '</div>';
                                 

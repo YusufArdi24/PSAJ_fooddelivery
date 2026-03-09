@@ -137,10 +137,20 @@ body {
   display: flex;
   flex-direction: column;
   height: 100%;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
 }
 
 .food-card:hover {
   box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+}
+
+.food-card-unavailable {
+  opacity: 0.6;
+  filter: grayscale(100%);
+  -webkit-filter: grayscale(100%);
 }
 
 .badge-available {

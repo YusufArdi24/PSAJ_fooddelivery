@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
 import Header from "../components/Header";
 import FilterBar from "../components/FilterBar";
@@ -29,6 +29,7 @@ interface CartItem {
 
 const Index = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, logout, isLoading: authLoading } = useAuth();
   const { 
     filteredMenus, 
@@ -120,6 +121,36 @@ const Index = () => {
       setShowVerifyModal(true);
     }
   }, [user, authLoading, navigate]);
+
+  // Handle reorder items from location state
+  useEffect(() => {
+    const state = location.state as { reorderItems?: any[], openCart?: boolean } | null;
+    if (state?.reorderItems && Array.isArray(state.reorderItems)) {
+      // Convert reorder items to cart items
+      const newCartItems: CartItem[] = state.reorderItems.map(item => {
+        const cartKey = item.selected_variant ? `${item.MenuID}|${item.selected_variant}` : item.MenuID.toString();
+        return {
+          id: cartKey,
+          menuId: item.MenuID.toString(),
+          name: item.menu_name,
+          price: parseFloat(item.price),
+          image: item.menu_image || '',
+          quantity: parseInt(item.quantity) || 1,
+          selected_variant: item.selected_variant,
+          variants: item.variants ? JSON.parse(item.variants) : undefined,
+        };
+      });
+      
+      setCartItems(newCartItems);
+      
+      if (state.openCart) {
+        setIsCartOpen(true);
+      }
+      
+      // Clear location state to prevent re-adding on refresh
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
 
   // Show loading state
   if (authLoading || menuLoading) {
@@ -302,6 +333,9 @@ const Index = () => {
         items: orderItems,
         payment_method: paymentMethod.toLowerCase().replace(/\s+/g, ""),
         notes: note || undefined,
+        delivery_address: deliverAddress || undefined,
+        delivery_address_label: addressLabel || undefined,
+        delivery_address_notes: addressNotes || undefined,
       });
 
       if (response.success) {
@@ -314,6 +348,20 @@ const Index = () => {
         setCartItems([]);
         setIsCartOpen(false);
         setNote("");
+        // Reset delivery address to default
+        if (user.address) {
+          setDeliverAddress(user.address);
+        }
+        if (user.address_label) {
+          setAddressLabel(user.address_label);
+        } else {
+          setAddressLabel("");
+        }
+        if (user.address_notes) {
+          setAddressNotes(user.address_notes);
+        } else {
+          setAddressNotes("");
+        }
       } else {
         toast({
           title: "Gagal membuat pesanan",
@@ -404,6 +452,8 @@ const Index = () => {
                     originalPrice={item.originalPrice}
                     discountedPrice={item.discountedPrice}
                     formattedDiscount={item.formattedDiscount}
+                    isPopular={item.isPopular}
+                    isRecommended={item.isRecommended}
                   />
                 );
               })}
@@ -434,7 +484,9 @@ const Index = () => {
         deliverAddress={deliverAddress}
         onUpdateAddress={setDeliverAddress}
         addressLabel={addressLabel}
+        onUpdateAddressLabel={setAddressLabel}
         addressNotes={addressNotes}
+        onUpdateAddressNotes={setAddressNotes}
         note={note}
         onUpdateNote={setNote}
         onConfirmPayment={handleConfirmPayment}

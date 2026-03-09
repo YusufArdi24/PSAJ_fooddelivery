@@ -18,7 +18,12 @@ class Order extends Model
         'total_price',
         'discount_amount',
         'status',
-        'notes'
+        'notes',
+        'delivery_address',
+        'delivery_address_label',
+        'delivery_address_notes',
+        'hidden_from_customer',
+        'hidden_from_admin'
     ];
 
     protected $casts = [
@@ -27,15 +32,14 @@ class Order extends Model
         'discount_amount' => 'decimal:2',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
+        'hidden_from_customer' => 'boolean',
+        'hidden_from_admin' => 'boolean',
     ];
 
     // Status constants
     const STATUS_PENDING = 'pending';
     const STATUS_CONFIRMED = 'confirmed';
-    const STATUS_PREPARING = 'preparing';
-    const STATUS_READY = 'ready';
     const STATUS_DELIVERED = 'delivered';
-    const STATUS_CANCELLED = 'cancelled';
 
     // Relationships
     public function customer()
@@ -66,11 +70,8 @@ class Order extends Model
     {
         return match($this->status) {
             'pending' => 'warning',
-            'confirmed' => 'info', 
-            'preparing' => 'primary',
-            'ready' => 'success',
+            'confirmed' => 'info',
             'delivered' => 'success',
-            'cancelled' => 'danger',
             default => 'secondary'
         };
     }

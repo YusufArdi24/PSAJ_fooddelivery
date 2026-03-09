@@ -15,6 +15,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'customer' => \App\Http\Middleware\CustomerMiddleware::class,
             'admin' => \App\Http\Middleware\AdminMiddleware::class,
+            'storage.cors' => \App\Http\Middleware\StorageCorsMiddleware::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

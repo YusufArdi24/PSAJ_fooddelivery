@@ -5,8 +5,10 @@ namespace App\Providers;
 use Illuminate\Support\ServiceProvider;
 use App\Models\Menu;
 use App\Models\Promo;
+use App\Models\Order;
 use App\Observers\MenuObserver;
 use App\Observers\PromoObserver;
+use App\Observers\OrderObserver;
 use App\Notifications\CustomerVerifyEmail;
 
 class AppServiceProvider extends ServiceProvider
@@ -26,6 +28,7 @@ class AppServiceProvider extends ServiceProvider
     {
         Menu::observe(MenuObserver::class);
         Promo::observe(PromoObserver::class);
+        Order::observe(OrderObserver::class);
 
         // Custom verification URL → points to frontend
         CustomerVerifyEmail::$createUrlUsing = function ($notifiable) {

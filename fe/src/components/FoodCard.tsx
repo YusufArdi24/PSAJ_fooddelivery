@@ -1,4 +1,4 @@
-import { Plus, Tag } from "lucide-react";
+import { Plus, Tag, TrendingUp, Sparkles } from "lucide-react";
 
 interface FoodCardProps {
   id: string;
@@ -14,6 +14,9 @@ interface FoodCardProps {
   originalPrice?: number;
   discountedPrice?: number;
   formattedDiscount?: string;
+  // Recommendation props
+  isPopular?: boolean;
+  isRecommended?: boolean;
 }
 
 const FoodCard = ({
@@ -29,6 +32,8 @@ const FoodCard = ({
   originalPrice,
   discountedPrice,
   formattedDiscount,
+  isPopular = false,
+  isRecommended = false,
 }: FoodCardProps) => {
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat("id-ID", {
@@ -42,7 +47,7 @@ const FoodCard = ({
   const displayPrice = hasPromo && discountedPrice ? discountedPrice : price;
 
   return (
-    <div className={`food-card ${!available ? "opacity-60 grayscale" : ""}`}>
+    <div className={`food-card ${!available ? "food-card-unavailable" : ""}`}>
       {/* Image */}
       <div className="relative aspect-[4/3] overflow-hidden">
         <img
@@ -50,6 +55,22 @@ const FoodCard = ({
           alt={name}
           className="w-full h-full object-cover"
         />
+        {/* Left side badges - Populer & Rekomendasi */}
+        <div className="absolute top-2 left-2 flex flex-col gap-1 items-start">
+          {isPopular && available && (
+            <span className="bg-gradient-to-r from-orange-500 to-red-500 text-white text-[10px] sm:text-xs font-bold px-1.5 sm:px-2 py-0.5 rounded-md shadow-lg flex items-center gap-1">
+              <TrendingUp className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+              Populer Hari Ini
+            </span>
+          )}
+          {isRecommended && available && (
+            <span className="bg-gradient-to-r from-purple-500 to-pink-500 text-white text-[10px] sm:text-xs font-bold px-1.5 sm:px-2 py-0.5 rounded-md shadow-lg flex items-center gap-1">
+              <Sparkles className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+              Rekomendasi
+            </span>
+          )}
+        </div>
+        {/* Right side badges - Available status & Promo */}
         <div className="absolute top-2 right-2 flex flex-col gap-1 items-end">
           <span className={`${available ? "badge-available" : "badge-unavailable"} text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5`}>
             {available ? "Tersedia" : "Tidak Tersedia"}

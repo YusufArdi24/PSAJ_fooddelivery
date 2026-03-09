@@ -6,19 +6,48 @@ use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 use App\Models\Customer;
 use App\Models\Order;
-use App\Models\Menu;
 use App\Models\Payment;
+use Carbon\Carbon;
 
 class StatsOverviewWidget extends BaseWidget
 {
+    protected function getColumns(): int
+    {
+        return 4;
+    }
+    
     protected function getStats(): array
     {
         $totalCustomers = Customer::count();
         $verifiedCustomers = Customer::where('is_verified', true)->count();
         $totalOrders = Order::count();
-        $totalRevenue = Payment::where('payment_status', 'paid')->sum('amount');
+        $completedOrders = Order::where('status', 'delivered')->count();
+        
+        // Calculate revenue for different periods (only delivered/completed orders)
+        // Count all payments from delivered orders (regardless of payment status)
+        $revenueToday = Payment::whereHas('order', function ($query) {
+                $query->where('status', 'delivered')
+                      ->where('hidden_from_admin', false)
+                      ->whereDate('order_date', Carbon::today());
+            })
+            ->sum('amount');
+            
+        $revenueThisMonth = Payment::whereHas('order', function ($query) {
+                $query->where('status', 'delivered')
+                      ->where('hidden_from_admin', false)
+                      ->whereMonth('order_date', Carbon::now()->month)
+                      ->whereYear('order_date', Carbon::now()->year);
+            })
+            ->sum('amount');
+            
+        $revenueThisYear = Payment::whereHas('order', function ($query) {
+                $query->where('status', 'delivered')
+                      ->where('hidden_from_admin', false)
+                      ->whereYear('order_date', Carbon::now()->year);
+            })
+            ->sum('amount');
+        
         $pendingOrders = Order::where('status', 'pending')->count();
-        $availableMenus = Menu::where('is_available', true)->count();
         
         return [
             Stat::make('Total Customers', $totalCustomers)
@@ -36,8 +65,23 @@ class StatsOverviewWidget extends BaseWidget
                 ->descriptionIcon('heroicon-m-shopping-bag')
                 ->color('info'),
                 
-            Stat::make('Total Revenue', 'Rp ' . number_format($totalRevenue))
-                ->description('Paid orders only')
+            Stat::make('Completed Orders', $completedOrders)
+                ->description('Successfully delivered')
+                ->descriptionIcon('heroicon-m-check-circle')
+                ->color('success'),
+                
+            Stat::make('Pendapatan Hari Ini', 'Rp ' . number_format($revenueToday))
+                ->description(Carbon::today()->format('d M Y'))
+                ->descriptionIcon('heroicon-m-banknotes')
+                ->color('success'),
+                
+            Stat::make('Pendapatan Bulan Ini', 'Rp ' . number_format($revenueThisMonth))
+                ->description(Carbon::now()->format('F Y'))
+                ->descriptionIcon('heroicon-m-banknotes')
+                ->color('success'),
+                
+            Stat::make('Pendapatan Tahun Ini', 'Rp ' . number_format($revenueThisYear))
+                ->description(Carbon::now()->format('Y'))
                 ->descriptionIcon('heroicon-m-banknotes')
                 ->color('success'),
                 
@@ -45,11 +89,6 @@ class StatsOverviewWidget extends BaseWidget
                 ->description('Needs attention')
                 ->descriptionIcon('heroicon-m-clock')
                 ->color('danger'),
-                
-            Stat::make('Available Menus', $availableMenus)
-                ->description('Currently available')
-                ->descriptionIcon('heroicon-m-list-bullet')
-                ->color('primary'),
         ];
     }
 }
