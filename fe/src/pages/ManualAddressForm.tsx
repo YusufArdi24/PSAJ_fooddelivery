@@ -127,6 +127,9 @@ export default function ManualAddressForm() {
           localStorage.removeItem('wdn_phone');
           localStorage.removeItem('wdn_email');
           localStorage.removeItem('isFirstLogin');
+          // Ensure location validation is set
+          sessionStorage.setItem('locationValidated', 'true');
+          sessionStorage.setItem('lastLocationCheck', new Date().getTime().toString());
 
           toast({
             title: 'Akun berhasil dibuat! 🎉',
@@ -150,6 +153,10 @@ export default function ManualAddressForm() {
           try { await refreshUser(); } catch (err) {
             console.warn('Failed to refresh user after location save:', err);
           }
+          // Ensure location validation is set
+          sessionStorage.setItem('locationValidated', 'true');
+          sessionStorage.setItem('lastLocationCheck', new Date().getTime().toString());
+          
           toast({
             title: 'Lokasi berhasil disimpan',
             description: 'Alamat Anda telah diperbarui.',

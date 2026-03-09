@@ -42,8 +42,11 @@ export default function CompleteProfile() {
         // Pending registration flow: just store phone, no API call yet
         localStorage.setItem('wdn_phone', phone);
         localStorage.setItem('isFirstLogin', 'true');
+        // Mark location as validated since user already passed geofencing
+        sessionStorage.setItem('locationValidated', 'true');
+        sessionStorage.setItem('lastLocationCheck', new Date().getTime().toString());
         toast({
-          title: 'Nomor telepon disimpan',
+          title: 'Nomor telepon tersimpan',
           description: 'Sekarang atur lokasi pengiriman Anda.',
         });
         navigate('/location');
@@ -53,8 +56,11 @@ export default function CompleteProfile() {
         if (result && result.success) {
           try { await refreshUser(); } catch (_) {}
           localStorage.setItem('isFirstLogin', 'true');
+          // Mark location as validated since user already passed geofencing
+          sessionStorage.setItem('locationValidated', 'true');
+          sessionStorage.setItem('lastLocationCheck', new Date().getTime().toString());
           toast({
-            title: 'Nomor telepon disimpan',
+            title: 'Nomor telepon tersimpan', 
             description: 'Sekarang atur lokasi pengiriman Anda.',
           });
           navigate('/location');

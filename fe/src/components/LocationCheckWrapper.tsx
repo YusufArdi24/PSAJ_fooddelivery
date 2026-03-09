@@ -7,12 +7,12 @@ interface LocationCheckWrapperProps {
   requiresLocationCheck?: boolean;
 }
 
-// Service area polygon untuk Bukit Kalibagor Indah
+// Service area polygon untuk Beji
 const serviceArea = [
-  [-7.4835, 109.2915], // Barat Laut
-  [-7.4835, 109.2975], // Timur Laut  
-  [-7.4885, 109.2975], // Timur Selatan
-  [-7.4885, 109.2915], // Barat Selatan
+  [-7.386377, 109.223210], // Titik 1 Beji                         
+  [-7.386388, 109.223776], // Titik 2 Beji                        
+  [-7.386968, 109.223763], // Titik 3 Beji                      
+  [-7.386923, 109.223224]  // Titik 4 Beji      
 ] as [number, number][];
 
 // Point in polygon algorithm

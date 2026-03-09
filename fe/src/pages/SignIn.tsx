@@ -62,6 +62,9 @@ export default function SignIn() {
           } else if (!customer?.address) {
             navigate('/location');
           } else {
+            // Set location as validated since user already passed geofencing
+            sessionStorage.setItem('locationValidated', 'true');
+            sessionStorage.setItem('lastLocationCheck', new Date().getTime().toString());
             navigate('/dashboard');
           }
         } else {
@@ -150,6 +153,9 @@ export default function SignIn() {
           navigate("/location");
         } else {
           toast({ title: "Login Berhasil", description: "Selamat datang kembali!" });
+          // Set location as validated since user already passed geofencing
+          sessionStorage.setItem('locationValidated', 'true');
+          sessionStorage.setItem('lastLocationCheck', new Date().getTime().toString());
           navigate("/dashboard");
         }
       } else {

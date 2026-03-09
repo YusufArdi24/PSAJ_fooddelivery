@@ -38,17 +38,17 @@ interface LocationState {
   permissionDenied: boolean;
 }
 
-// Service area polygon for Bukit Kalibagor Indah
-// Based on center coordinates: -7.4857433, 109.2945344
+// Service area polygon for Beji
+// Based on center coordinates: -7.386664, 109.223493
 const serviceArea = [
-  [-7.483596, 109.293871], // Barat Laut (kejauhan)                         
-  [-7.484170, 109.298047], // Timur Laut (kejauhan)                        
-  [-7.486748, 109.296254], // Timur Selatan (kejauhan)                      
-  [-7.485928, 109.293061]  // Barat Selatan (kejauhan)      
+  [-7.386377, 109.223210], // Titik 1 Beji                         
+  [-7.386388, 109.223776], // Titik 2 Beji                        
+  [-7.386968, 109.223763], // Titik 3 Beji                      
+  [-7.386923, 109.223224]  // Titik 4 Beji      
 ] as [number, number][];
 
 // Center point of the service area
-const serviceCenter: [number, number] = [-7.4857433, 109.2945344];
+const serviceCenter: [number, number] = [-7.386664, 109.223493];
 
 // Calculate map bounds to show both user location and service area
 const calculateMapBounds = (userLat: number, userLng: number) => {
@@ -277,7 +277,7 @@ export default function GeoFencing() {
                       weight: 3 
                     }}
                   >
-                    <Popup>Area Layanan Bukit Kalibagor Indah</Popup>
+                    <Popup>Area Layanan Beji</Popup>
                   </Polygon>
                   
                   {/* Service center marker for reference */}
@@ -288,7 +288,7 @@ export default function GeoFencing() {
                       <div className="text-center">
                         <strong className="text-green-600">🏠 Pusat Area Layanan</strong><br/>
                         <small className="text-gray-600">
-                          Perumahan Bukit Kalibagor Indah<br/>
+                          Beji<br/>
                           Lat: {serviceCenter[0].toFixed(6)}<br/>
                           Lng: {serviceCenter[1].toFixed(6)}
                         </small>
@@ -350,13 +350,13 @@ export default function GeoFencing() {
             </div>
             <h2 className="text-2xl font-bold text-gray-800 mb-4">Akses Ditolak</h2>
             <p className="text-gray-600 mb-6">
-              Maaf, layanan delivery kami saat ini hanya tersedia untuk area Perumahan Bukit Kalibagor Indah. 
+              Maaf, layanan delivery kami saat ini hanya tersedia untuk area Beji. 
               Lokasi Anda berada di luar jangkauan layanan kami.
             </p>
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
               <h4 className="font-semibold text-blue-800 mb-2">Area Layanan Kami:</h4>
               <p className="text-blue-700 text-sm">
-                • Perumahan Bukit Kalibagor Indah
+                • Beji
               </p>
             </div>
             <div className="space-y-3">
@@ -405,7 +405,7 @@ export default function GeoFencing() {
                     weight: 3 
                   }}
                 >
-                  <Popup>Area Layanan Bukit Kalibagor Indah</Popup>
+                  <Popup>Area Layanan Beji</Popup>
                 </Polygon>
                 
                 {/* Service center marker for reference */}
@@ -416,7 +416,7 @@ export default function GeoFencing() {
                     <div className="text-center">
                       <strong className="text-green-600">🏠 Pusat Area Layanan</strong><br/>
                       <small className="text-gray-600">
-                        Perumahan Bukit Kalibagor Indah<br/>
+                        Beji<br/>
                         Lat: {serviceCenter[0].toFixed(6)}<br/>
                         Lng: {serviceCenter[1].toFixed(6)}
                       </small>
@@ -478,7 +478,7 @@ export default function GeoFencing() {
           </div>
           <h2 className="text-2xl font-bold text-gray-800 mb-4">Lokasi Terverifikasi!</h2>
           <p className="text-gray-600 mb-6">
-            Selamat! Anda berada dalam jangkauan layanan delivery Perumahan Bukit Kalibagor Indah. 
+            Selamat! Anda berada dalam jangkauan layanan delivery Beji. 
             Anda akan dialihkan ke halaman pendaftaran dalam beberapa detik...
           </p>
           <div className="flex items-center justify-center space-x-2 text-green-600">
