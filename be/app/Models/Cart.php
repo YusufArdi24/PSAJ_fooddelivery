@@ -32,9 +32,10 @@ class Cart extends Model
         return $this->belongsTo(Menu::class, 'MenuID', 'MenuID');
     }
 
-    // Calculate subtotal
+    // Calculate subtotal using snapshot price from cart (price at time of adding to cart)
     public function getSubtotalAttribute()
     {
+        // Use stored price as snapshot - preserve price history
         return $this->price * $this->quantity;
     }
 }

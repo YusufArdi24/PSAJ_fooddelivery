@@ -8,6 +8,7 @@ use App\Models\Menu;
 use App\Models\Order;
 use App\Models\OrderDetail;
 use App\Models\Payment;
+use App\Models\Promo;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
@@ -23,6 +24,7 @@ class CartController extends Controller
                         ->with('menu')
                         ->get();
 
+        // Use snapshot prices from cart (prices at time of adding to cart)
         $total = $cartItems->sum('subtotal');
         $itemCount = $cartItems->sum('quantity');
 
@@ -211,8 +213,21 @@ class CartController extends Controller
             $totalDiscount = 0;
 
             $itemsData = $cartItems->map(function ($cartItem) use (&$totalOriginal, &$totalDiscount) {
-                $originalPrice = $cartItem->menu->price;
-                $promo = $cartItem->menu->activePromo;
+                // Use snapshot price from cart (price at time of adding to cart)
+                // This ensures order reflects the price when customer added item, not current menu price
+                $originalPrice = $cartItem->price;
+                
+                // Get active promo - refresh to ensure we get the latest active promo
+                $promo = null;
+                if ($cartItem->menu) {
+                    $promo = Promo::where('MenuID', $cartItem->MenuID)
+                        ->where('is_active', true)
+                        ->where('start_date', '<=', now())
+                        ->where('end_date', '>=', now())
+                        ->orderBy('created_at', 'desc')
+                        ->first();
+                }
+                
                 $discountPerItem = $promo ? $promo->calculateDiscount($originalPrice) : 0;
                 $discountedPrice = max(0, $originalPrice - $discountPerItem);
 

@@ -21,6 +21,7 @@ class PaymentController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'order_id' => 'required|integer|exists:orders,OrderID',
+            'payment_method' => 'nullable|string',
         ]);
 
         if ($validator->fails()) {
@@ -70,7 +71,9 @@ class PaymentController extends Controller
 
         try {
             $midtrans = new MidtransService();
-            $snapData = $midtrans->createSnapTransaction($payment, $order, $request->user());
+            // Use payment_method from request if provided, otherwise use payment's method
+            $paymentMethod = $request->input('payment_method') ?? $payment->payment_method;
+            $snapData = $midtrans->createSnapTransaction($payment, $order, $request->user(), $paymentMethod);
 
             // Save snap token & midtrans order ID to payment record
             $payment->update([
@@ -93,9 +96,13 @@ class PaymentController extends Controller
                 ],
             ]);
         } catch (\Exception $e) {
-            Log::error('Midtrans Snap error: ' . $e->getMessage(), [
-                'order_id'   => $order->OrderID,
-                'payment_id' => $payment->PaymentID,
+            Log::error('Midtrans Snap error', [
+                'order_id'   => $order->OrderID ?? 'N/A',
+                'payment_id' => $payment->PaymentID ?? 'N/A',
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString(),
             ]);
 
             return response()->json([

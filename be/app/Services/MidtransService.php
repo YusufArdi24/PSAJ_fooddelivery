@@ -22,7 +22,7 @@ class MidtransService
      * Create a Midtrans Snap transaction for the given payment & order.
      * Returns ['snap_token' => ..., 'redirect_url' => ..., 'midtrans_order_id' => ...]
      */
-    public function createSnapTransaction(Payment $payment, Order $order, Customer $customer): array
+    public function createSnapTransaction(Payment $payment, Order $order, Customer $customer, ?string $paymentMethod = null): array
     {
         // Unique order ID for Midtrans (must be unique per transaction attempt)
         $midtransOrderId = 'ORDER-' . $order->OrderID . '-' . time();
@@ -56,11 +56,58 @@ class MidtransService
             ],
         ];
 
-        // Restrict to specific payment method if not using QRIS / all methods
-        $enabledPayments = $this->resolveEnabledPayments($payment->payment_method);
-        if ($enabledPayments !== null) {
-            $params['enabled_payments'] = $enabledPayments;
+        // Restrict to specific payment method (if provided)
+        // If no method specified, don't restrict - show all available methods
+        $method = $paymentMethod ?? $payment->payment_method;
+        
+        if (!empty($method)) {
+            $method = strtolower(trim($method));
+            
+            // Map payment method to Midtrans payment types
+            // Using ONLY enabled_payments (no disabled_payments to avoid conflicts)
+            if ($method === 'gopay') {
+                // Direct GoPay - only GoPay
+                $params['enabled_payments'] = ['gopay'];
+            } 
+            elseif ($method === 'ovo') {
+                // Direct OVO - only OVO
+                $params['enabled_payments'] = ['ovo'];
+            }
+            elseif ($method === 'dana') {
+                // Direct DANA - only DANA
+                $params['enabled_payments'] = ['dana'];
+            }
+            elseif ($method === 'shopeepay') {
+                // Direct ShopeePay - only ShopeePay
+                $params['enabled_payments'] = ['shopeepay'];
+            }
+            elseif ($method === 'linkaja') {
+                // Direct LinkAja - only LinkAja
+                $params['enabled_payments'] = ['linkaja'];
+            }
+            // For QRIS, show all QRIS-capable e-wallets
+            elseif ($method === 'qris') {
+                $params['enabled_payments'] = ['gopay', 'ovo', 'dana', 'shopeepay', 'linkaja'];
+            }
+            // For bank transfer, set specific bank only
+            elseif (in_array($method, ['bca', 'bni', 'bri', 'mandiri'])) {
+                $bankVaMap = [
+                    'bca' => 'bca_va',
+                    'bni' => 'bni_va',
+                    'bri' => 'bri_va',
+                    'mandiri' => ['mandiri_va', 'echannel'],
+                ];
+                if (isset($bankVaMap[$method])) {
+                    $params['enabled_payments'] = (array)$bankVaMap[$method];
+                }
+            }
+            // If method is 'online', show all online payment methods
+            elseif ($method === 'online') {
+                // Don't restrict - let all methods be available
+                // This allows user to select from all payment methods in Midtrans Snap
+            }
         }
+        // If no method specified, don't set enabled_payments - show ALL available methods
 
         $snapResponse = Snap::createTransaction($params);
 
@@ -77,19 +124,34 @@ class MidtransService
      */
     private function resolveEnabledPayments(string $method): ?array
     {
+        // Normalize method name
+        $method = strtolower(trim($method));
+        
         return match ($method) {
+            // E-Wallets (Direct)
             'gopay'     => ['gopay'],
+            'ovo'       => ['ovo'],
+            'dana'      => ['dana'],
             'shopeepay' => ['shopeepay'],
-            'dana'      => ['shopeepay'], // DANA uses ShopeePay channel in some integrations; adjust as needed
-            'ovo'       => ['other_qris'],
-            'qris'      => ['gopay', 'shopeepay', 'other_qris'],
+            'linkaja'   => ['linkaja'],
+            
+            // QRIS / QR Code (all e-wallets available)
+            'qris'      => ['gopay', 'ovo', 'dana', 'shopeepay', 'linkaja'],
+            
+            // Bank Transfer (Virtual Account)
             'bca'       => ['bca_va'],
             'bni'       => ['bni_va'],
             'bri'       => ['bri_va'],
-            'mandiri'   => ['echannel'],
-            'transfer'  => ['bca_va', 'bni_va', 'bri_va', 'echannel', 'permata_va', 'other_va'],
+            'mandiri'   => ['mandiri_va', 'echannel'],
+            
+            // General transfer/bank options
+            'transfer'  => ['bca_va', 'bni_va', 'bri_va', 'mandiri_va', 'echannel', 'permata_va', 'other_va'],
+            
+            // Credit Card
             'credit_card' => ['credit_card'],
-            default     => null, // allow all
+            
+            // Default: allow all methods
+            default     => null,
         };
     }
 

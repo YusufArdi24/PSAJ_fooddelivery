@@ -14,6 +14,12 @@ import { useMenu } from "../contexts/MenuContext";
 import { toast } from "../components/ui/use-toast";
 import { createOrder, OrderItem } from "../services/orderService";
 import { getAvatarUrl } from "../services/customerService";
+import { 
+  getPaymentMethods, 
+  createSnapTransaction, 
+  initializeMidtransSnap, 
+  openMidtransPayment 
+} from "../services/paymentService";
 
 // Interfaces
 interface CartItem {
@@ -59,6 +65,9 @@ const Index = () => {
     name: string;
     variants: string[];
   } | null>(null);
+  
+  // Midtrans states
+  const [midtransSnapUrl, setMidtransSnapUrl] = useState("");
   
   // Computed cart count
   const cartCount = cartItems.reduce((total, item) => total + item.quantity, 0);
@@ -151,6 +160,22 @@ const Index = () => {
       window.history.replaceState({}, document.title);
     }
   }, [location.state]);
+
+  // Load Midtrans configuration on mount
+  useEffect(() => {
+    const loadMidtransConfig = async () => {
+      try {
+        const response = await getPaymentMethods();
+        if (response.success) {
+          setMidtransSnapUrl(response.midtrans.snap_url);
+        }
+      } catch (error) {
+        console.error("[Dashboard] Error loading Midtrans config:", error);
+      }
+    };
+
+    loadMidtransConfig();
+  }, []);
 
   // Show loading state
   if (authLoading || menuLoading) {
@@ -282,7 +307,7 @@ const Index = () => {
     });
   };
 
-  const handleConfirmPayment = async (paymentMethod: string) => {
+  const handleConfirmPayment = async () => {
     if (cartItems.length === 0) return;
 
     // Guard: require email verification
@@ -328,10 +353,11 @@ const Index = () => {
         selected_variant: item.selected_variant,
       }));
 
-      // Create order via API
+      // Create order via API with 'online' as default payment method
+      // Actual method will be determined by user selection in Midtrans
       const response = await createOrder({
         items: orderItems,
-        payment_method: paymentMethod.toLowerCase().replace(/\s+/g, ""),
+        payment_method: "online",
         notes: note || undefined,
         delivery_address: deliverAddress || undefined,
         delivery_address_label: addressLabel || undefined,
@@ -339,28 +365,67 @@ const Index = () => {
       });
 
       if (response.success) {
+        // Get the order ID from the response
+        const orderId = response.data?.OrderID;
+        
+        if (!orderId) {
+          throw new Error("Order ID not found in response");
+        }
+
+        // Show loading toast
         toast({
-          title: "Pesanan berhasil dibuat!",
-          description: `Pembayaran via ${paymentMethod} berhasil. Pesanan Anda sedang diproses.`,
+          title: "Mempersiapkan pembayaran...",
+          description: "Tunggu sebentar...",
         });
 
-        // Clear cart
-        setCartItems([]);
-        setIsCartOpen(false);
-        setNote("");
-        // Reset delivery address to default
-        if (user.address) {
-          setDeliverAddress(user.address);
-        }
-        if (user.address_label) {
-          setAddressLabel(user.address_label);
-        } else {
-          setAddressLabel("");
-        }
-        if (user.address_notes) {
-          setAddressNotes(user.address_notes);
-        } else {
-          setAddressNotes("");
+        try {
+          // Create Snap transaction without payment method restriction
+          // This allows Midtrans to show ALL payment methods
+          const snapResponse = await createSnapTransaction(orderId, "online");
+          
+          if (!snapResponse.success) {
+            throw new Error(snapResponse.message || "Failed to create payment transaction");
+          }
+
+          const snapToken = snapResponse.data.snap_token;
+
+          // Initialize Midtrans Snap library
+          await initializeMidtransSnap(midtransSnapUrl);
+
+          // Open Midtrans payment modal - user selects method here
+          await openMidtransPayment(snapToken);
+
+          // Clear cart after opening payment modal
+          setCartItems([]);
+          setIsCartOpen(false);
+          setNote("");
+          // Reset delivery address to default
+          if (user.address) {
+            setDeliverAddress(user.address);
+          }
+          if (user.address_label) {
+            setAddressLabel(user.address_label);
+          } else {
+            setAddressLabel("");
+          }
+          if (user.address_notes) {
+            setAddressNotes(user.address_notes);
+          } else {
+            setAddressNotes("");
+          }
+
+          // Show payment confirmation
+          toast({
+            title: "Modal pembayaran dibuka",
+            description: "Silakan pilih metode pembayaran dan selesaikan pembayaran",
+          });
+        } catch (paymentError: any) {
+          console.error("Error processing online payment:", paymentError);
+          toast({
+            title: "Gagal membuka modal pembayaran",
+            description: paymentError.message || "Silakan coba kembali",
+            variant: "destructive",
+          });
         }
       } else {
         toast({

@@ -24,6 +24,9 @@ import CompleteProfile from "./pages/CompleteProfile";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import VerifyEmail from "./pages/VerifyEmail";
+import PaymentFinish from "./pages/PaymentFinish";
+import PaymentPending from "./pages/PaymentPending";
+import PaymentError from "./pages/PaymentError";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -88,6 +91,32 @@ const AnimatedRoutes = () => {
           element={
             <ThemedRoute>
               <OrderHistory />
+            </ThemedRoute>
+          } 
+        />
+        
+        {/* Payment pages - no animation */}
+        <Route 
+          path="/payment/finish" 
+          element={
+            <ThemedRoute>
+              <PaymentFinish />
+            </ThemedRoute>
+          } 
+        />
+        <Route 
+          path="/payment/pending" 
+          element={
+            <ThemedRoute>
+              <PaymentPending />
+            </ThemedRoute>
+          } 
+        />
+        <Route 
+          path="/payment/error" 
+          element={
+            <ThemedRoute>
+              <PaymentError />
             </ThemedRoute>
           } 
         />

@@ -10,7 +10,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // Update the enum column to include all payment methods
+        // Add 'online' to the payment_method enum
         DB::statement("ALTER TABLE payments MODIFY COLUMN payment_method ENUM(
             'cash', 
             'cod', 
@@ -36,10 +36,21 @@ return new class extends Migration
      */
     public function down(): void
     {
-        // Revert back to original enum values
+        // Revert by removing 'online' from the enum
         DB::statement("ALTER TABLE payments MODIFY COLUMN payment_method ENUM(
             'cash', 
+            'cod', 
             'transfer', 
+            'gopay', 
+            'dana', 
+            'ovo', 
+            'linkaja', 
+            'shopeepay', 
+            'qris', 
+            'bca', 
+            'mandiri', 
+            'bni', 
+            'bri', 
             'e-wallet', 
             'credit_card'
         ) DEFAULT 'cash'");

@@ -11,6 +11,7 @@ use App\Models\Notification;
 use App\Services\PushNotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 
 class OrderController extends Controller
@@ -20,6 +21,10 @@ class OrderController extends Controller
         $paginator = Order::where('CustomerID', $request->user()->CustomerID)
                      ->where('hidden_from_customer', false)
                      ->with(['orderDetails.menu.activePromo', 'payment'])
+                     ->whereHas('payment', function ($q) {
+                         // Only show orders with successful payment
+                         $q->where('payment_status', 'paid');
+                     })
                      ->orderBy('created_at', 'desc')
                      ->paginate($request->get('per_page', 10));
 
@@ -100,7 +105,7 @@ class OrderController extends Controller
             'items.*.menu_id' => 'required|exists:menus,MenuID',
             'items.*.quantity' => 'required|integer|min:1',
             'items.*.selected_variant' => 'nullable|string|max:100',
-            'payment_method' => 'required|in:cash,cod,transfer,gopay,dana,ovo,linkaja,shopeepay,qris,bca,mandiri,bni,bri',
+            'payment_method' => 'required|in:cash,cod,online,transfer,gopay,dana,ovo,linkaja,shopeepay,qris,bca,mandiri,bni,bri',
             'notes' => 'nullable|string|max:500',
             'delivery_address' => 'nullable|string',
             'delivery_address_label' => 'nullable|string|max:255',
@@ -119,12 +124,15 @@ class OrderController extends Controller
         
         try {
             $totalPrice = 0;
+            $totalOriginal = 0;
+            $totalDiscount = 0;
             $orderItems = [];
             
-            // Validate items and calculate total
+            // Validate items and calculate total with discount
             foreach ($request->items as $item) {
                 $menu = Menu::where('MenuID', $item['menu_id'])
                           ->where('is_available', true)
+                          ->with('activePromo')
                           ->first();
                           
                 if (!$menu) {
@@ -135,13 +143,25 @@ class OrderController extends Controller
                     ], 422);
                 }
                 
-                $itemTotal = $menu->price * $item['quantity'];
+                // Calculate with discount
+                $originalPrice = $menu->price;
+                $promo = $menu->activePromo;
+                $discountPerItem = $promo ? $promo->calculateDiscount($originalPrice) : 0;
+                $discountedPrice = max(0, $originalPrice - $discountPerItem);
+                
+                $quantity = $item['quantity'];
+                $itemTotal = $discountedPrice * $quantity;
+                
+                $totalOriginal += $originalPrice * $quantity;
+                $totalDiscount += $discountPerItem * $quantity;
                 $totalPrice += $itemTotal;
                 
                 $orderItems[] = [
                     'menu' => $menu,
-                    'quantity' => $item['quantity'],
-                    'price' => $menu->price,
+                    'quantity' => $quantity,
+                    'originalPrice' => $originalPrice,
+                    'discountPerItem' => $discountPerItem,
+                    'discountedPrice' => $discountedPrice,
                     'subtotal' => $itemTotal,
                     'selected_variant' => $item['selected_variant'] ?? null,
                 ];
@@ -155,11 +175,12 @@ class OrderController extends Controller
             $deliveryAddressLabel = $request->delivery_address_label ?? $customer->address_label;
             $deliveryAddressNotes = $request->delivery_address_notes ?? $customer->address_notes;
             
-            // Create order
+            // Create order with discount
             $order = Order::create([
                 'CustomerID' => $customer->CustomerID,
                 'order_date' => now(),
                 'total_price' => $totalPrice,
+                'discount_amount' => $totalDiscount,
                 'status' => 'pending',
                 'notes' => $request->notes,
                 'delivery_address' => $deliveryAddress,
@@ -167,13 +188,16 @@ class OrderController extends Controller
                 'delivery_address_notes' => $deliveryAddressNotes
             ]);
             
-            // Create order details
+            // Create order details with discount information
             foreach ($orderItems as $item) {
                 OrderDetail::create([
                     'OrderID' => $order->OrderID,
                     'MenuID' => $item['menu']->MenuID,
+                    'menu_name' => $item['menu']->name,
                     'quantity' => $item['quantity'],
-                    'price' => $item['price'],
+                    'price' => $item['discountedPrice'],
+                    'original_price' => $item['originalPrice'],
+                    'discount_per_item' => $item['discountPerItem'],
                     'selected_variant' => $item['selected_variant'],
                 ]);
             }
@@ -181,12 +205,11 @@ class OrderController extends Controller
             // Determine payment status based on method
             $paymentStatus = in_array($request->payment_method, ['cash', 'cod']) ? 'pending' : 'waiting_payment';
             
-            // Auto-generate payment details from customer data (use delivery address for this order)
+            // Store minimal payment details (address already in order table, no need to duplicate)
             $paymentDetails = [
                 'phone' => $customer->phone,
                 'account_name' => $customer->name,
                 'customer_email' => $customer->email,
-                'customer_address' => $deliveryAddress
             ];
             
             // Create payment record
@@ -217,17 +240,31 @@ class OrderController extends Controller
                     ['type' => 'new_order', 'order_id' => $order->OrderID]
                 );
             } catch (\Exception $e) {
-                \Illuminate\Support\Facades\Log::warning('Admin push failed: ' . $e->getMessage());
+                Log::warning('Admin push failed: ' . $e->getMessage());
             }
             
             return response()->json([
                 'success' => true,
                 'message' => 'Order created successfully',
-                'data' => $order
+                'data' => [
+                    'OrderID' => $order->OrderID,
+                    'CustomerID' => $order->CustomerID,
+                    'order_date' => $order->order_date,
+                    'total_price' => (float) $order->total_price,
+                    'discount_amount' => (float) $order->discount_amount,
+                    'status' => $order->status,
+                    'notes' => $order->notes,
+                ]
             ], 201);
             
         } catch (\Exception $e) {
             DB::rollback();
+            Log::error('Order creation failed', [
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString(),
+            ]);
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to create order: ' . $e->getMessage()
@@ -265,24 +302,52 @@ class OrderController extends Controller
             ], 404);
         }
         
-        if (!in_array($order->status, ['pending', 'confirmed'])) {
+        // Only allow cancellation for pending orders
+        if ($order->status !== 'pending') {
             return response()->json([
                 'success' => false,
-                'message' => 'Order cannot be cancelled'
+                'message' => 'Hanya pesanan dengan status pending yang bisa dibatalkan'
             ], 422);
         }
         
-        $order->update(['status' => 'cancelled']);
+        DB::beginTransaction();
         
-        return response()->json([
-            'success' => true,
-            'message' => 'Order cancelled successfully'
-        ]);
+        try {
+            // Delete related records
+            // Delete payment record if exists
+            if ($order->payment) {
+                $order->payment->delete();
+            }
+            
+            // Delete order details
+            $order->orderDetails()->delete();
+            
+            // Delete the order itself
+            $order->delete();
+            
+            DB::commit();
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Pesanan berhasil dibatalkan dan dihapus'
+            ]);
+        } catch (\Exception $e) {
+            DB::rollback();
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal membatalkan pesanan: ' . $e->getMessage()
+            ], 500);
+        }
     }
     
     public function adminOrders(Request $request)
     {
-        $query = Order::with(['orderDetails.menu', 'payment', 'customer']);
+        $query = Order::with(['orderDetails.menu', 'payment', 'customer'])
+                     ->whereHas('payment', function ($q) {
+                         // Only show orders with successful payment
+                         $q->where('payment_status', 'paid');
+                     });
         
         if ($request->has('status')) {
             $query->where('status', $request->status);
@@ -385,7 +450,7 @@ class OrderController extends Controller
                     );
                 } catch (\Exception $e) {
                     // Don't fail the request if push notification fails
-                    \Illuminate\Support\Facades\Log::warning('Push notification failed: ' . $e->getMessage());
+                    Log::warning('Push notification failed: ' . $e->getMessage());
                 }
             }
         }

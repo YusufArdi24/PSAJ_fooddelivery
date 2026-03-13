@@ -1,7 +1,6 @@
 import { X, MapPin, Minus, Plus, Trash2 } from "lucide-react";
 import { Button } from "./ui/button";
 import ConfirmDialog from "./ConfirmDialog";
-import PaymentMethodModal from "./PaymentMethodModal";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { Input } from "./ui/input";
 import { Textarea } from "./ui/textarea";
@@ -36,7 +35,7 @@ interface CartSidebarProps {
   onUpdateAddressNotes?: (notes: string) => void;
   note: string;
   onUpdateNote: (note: string) => void;
-  onConfirmPayment: (paymentMethod: string) => void;
+  onConfirmPayment: () => void;
   isPlacingOrder?: boolean;
 }
 
@@ -60,7 +59,6 @@ const CartSidebar = ({
   isPlacingOrder = false,
 }: CartSidebarProps) => {
   const [showClearConfirm, setShowClearConfirm] = useState(false);
-  const [showPaymentModal, setShowPaymentModal] = useState(false);
   
   const subtotal = cartItems.reduce((total, item) => total + (item.price * item.quantity), 0);
   const grandTotal = subtotal;
@@ -75,12 +73,8 @@ const CartSidebar = ({
   };
 
   const handleConfirmPaymentClick = () => {
-    setShowPaymentModal(true);
-  };
-
-  const handlePaymentMethodSelect = (paymentMethod: string) => {
-    onConfirmPayment(paymentMethod);
-    setShowPaymentModal(false);
+    // Directly trigger payment confirmation - Midtrans modal will appear
+    onConfirmPayment();
   };
 
   if (!isOpen) return null;
@@ -347,14 +341,6 @@ const CartSidebar = ({
         confirmText="Ya, Hapus Semua"
         cancelText="Simpan Item"
         variant="destructive"
-      />
-
-      {/* Payment Method Modal */}
-      <PaymentMethodModal
-        isOpen={showPaymentModal}
-        onClose={() => setShowPaymentModal(false)}
-        onConfirm={handlePaymentMethodSelect}
-        isPlacingOrder={isPlacingOrder}
       />
     </>
   );

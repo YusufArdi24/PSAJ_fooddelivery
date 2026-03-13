@@ -3,14 +3,14 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "../components/ui/button";
 import { Card, CardContent } from "../components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
-import { ChefHat, Trash2 } from "lucide-react";
+import { ChefHat, Trash2, X, Loader2 } from "lucide-react";
 import Sidebar from "../components/Sidebar";
 import Header from "../components/Header";
 import MobileSidebar from "../components/MobileSidebar";
 import { useAuth } from "../contexts/AuthContext";
 import { useNotification } from "../contexts/NotificationContext";
 import { toast } from "../components/ui/use-toast";
-import { getCustomerOrders, getOrderStatusText, getOrderStatusColor, hideOrder, reorder } from "../services/orderService";
+import { getCustomerOrders, getOrderStatusText, getOrderStatusColor, hideOrder, reorder, cancelOrder } from "../services/orderService";
 import { getAvatarUrl } from "../services/customerService";
 
 interface OrderItem {
@@ -65,6 +65,7 @@ export default function OrderHistory() {
   const [isLoadingOrders, setIsLoadingOrders] = useState(true);
   const [deletingOrderId, setDeletingOrderId] = useState<number | null>(null);
   const [reorderingOrderId, setReorderingOrderId] = useState<number | null>(null);
+  const [cancellingOrderId, setCancellingOrderId] = useState<number | null>(null);
 
   // Authentication check
   useEffect(() => {
@@ -211,6 +212,41 @@ export default function OrderHistory() {
       setReorderingOrderId(null);
     }
   };
+
+  const handleCancelOrder = async (orderId: number) => {
+    if (!confirm("Yakin ingin membatalkan pesanan ini? Pesanan akan dihapus secara permanen.")) {
+      return;
+    }
+
+    setCancellingOrderId(orderId);
+    try {
+      const result = await cancelOrder(orderId);
+      if (result.success) {
+        // Remove order from local state
+        setOrders(prevOrders => prevOrders.filter(order => order.OrderID !== orderId));
+        toast({
+          title: "Pesanan dibatalkan",
+          description: "Pesanan berhasil dibatalkan dan dihapus.",
+        });
+      } else {
+        toast({
+          title: "Gagal membatalkan",
+          description: result.message || "Terjadi kesalahan saat membatalkan pesanan.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error cancelling order:", error);
+      toast({
+        title: "Gagal membatalkan",
+        description: "Terjadi kesalahan saat membatalkan pesanan.",
+        variant: "destructive",
+      });
+    } finally {
+      setCancellingOrderId(null);
+    }
+  };
+
 
   // Fungsi untuk memformat harga sesuai dengan format aplikasi
   const formatPrice = (price: number | string | undefined | null) => {
@@ -547,6 +583,26 @@ export default function OrderHistory() {
 
                               {/* Action Buttons */}
                               <div className="flex gap-3 mt-auto pt-0">
+                                {order.status === 'pending' && (
+                                  <Button
+                                    onClick={() => handleCancelOrder(order.OrderID)}
+                                    disabled={cancellingOrderId === order.OrderID}
+                                    variant="destructive"
+                                    className="flex-1 disabled:opacity-50"
+                                  >
+                                    {cancellingOrderId === order.OrderID ? (
+                                      <>
+                                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                        Membatalkan...
+                                      </>
+                                    ) : (
+                                      <>
+                                        <X className="h-4 w-4 mr-2" />
+                                        Batalkan Pesanan
+                                      </>
+                                    )}
+                                  </Button>
+                                )}
                                 <Button
                                   onClick={() => handleReorder(order.OrderID)}
                                   disabled={reorderingOrderId === order.OrderID}

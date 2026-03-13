@@ -6,7 +6,6 @@ use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 use App\Models\Customer;
 use App\Models\Order;
-use App\Models\Payment;
 use Carbon\Carbon;
 
 class StatsOverviewWidget extends BaseWidget
@@ -24,28 +23,23 @@ class StatsOverviewWidget extends BaseWidget
         $completedOrders = Order::where('status', 'delivered')->count();
         
         // Calculate revenue for different periods (only delivered/completed orders)
-        // Count all payments from delivered orders (regardless of payment status)
-        $revenueToday = Payment::whereHas('order', function ($query) {
-                $query->where('status', 'delivered')
-                      ->where('hidden_from_admin', false)
-                      ->whereDate('order_date', Carbon::today());
-            })
-            ->sum('amount');
+        // Use Order.total_price which already includes discount calculation
+        // This ensures accurate revenue reporting with discounts applied
+        $revenueToday = Order::where('status', 'delivered')
+            ->where('hidden_from_admin', false)
+            ->whereDate('order_date', Carbon::today())
+            ->sum('total_price');
             
-        $revenueThisMonth = Payment::whereHas('order', function ($query) {
-                $query->where('status', 'delivered')
-                      ->where('hidden_from_admin', false)
-                      ->whereMonth('order_date', Carbon::now()->month)
-                      ->whereYear('order_date', Carbon::now()->year);
-            })
-            ->sum('amount');
+        $revenueThisMonth = Order::where('status', 'delivered')
+            ->where('hidden_from_admin', false)
+            ->whereMonth('order_date', Carbon::now()->month)
+            ->whereYear('order_date', Carbon::now()->year)
+            ->sum('total_price');
             
-        $revenueThisYear = Payment::whereHas('order', function ($query) {
-                $query->where('status', 'delivered')
-                      ->where('hidden_from_admin', false)
-                      ->whereYear('order_date', Carbon::now()->year);
-            })
-            ->sum('amount');
+        $revenueThisYear = Order::where('status', 'delivered')
+            ->where('hidden_from_admin', false)
+            ->whereYear('order_date', Carbon::now()->year)
+            ->sum('total_price');
         
         $pendingOrders = Order::where('status', 'pending')->count();
         
