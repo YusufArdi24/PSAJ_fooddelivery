@@ -6,7 +6,7 @@ import { Label } from "../components/ui/label";
 import { ChefHat, ArrowLeft, Mail } from "lucide-react";
 import { toast } from "../components/ui/use-toast";
 import { forgotPassword } from "../services/authService";
-import Logo from "../assets/warungedin.png";
+import Logo from "/warungedin.png";
 
 export default function ForgotPassword() {
   const navigate = useNavigate();

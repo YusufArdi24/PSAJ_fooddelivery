@@ -4,7 +4,7 @@ import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Eye, EyeOff, ChefHat, UtensilsCrossed, Coffee, Croissant } from "lucide-react";
-import Logo from "../assets/warungedin.png";
+import Logo from "/warungedin.png";
 import { toast } from "../components/ui/use-toast";
 import { preRegisterCustomer } from "../services/authService";
 

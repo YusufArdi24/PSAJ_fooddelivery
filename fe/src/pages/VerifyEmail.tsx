@@ -6,7 +6,7 @@ import { ChefHat, UtensilsCrossed, Coffee, Croissant, Mail, RefreshCw, CheckCirc
 import { toast } from "../components/ui/use-toast";
 import { resendVerificationEmail, verifyEmailToken, verifyOtp, resendOtpCode } from "../services/authService";
 import { useAuth } from "../contexts/AuthContext";
-import Logo from "../assets/warungedin.png";
+import Logo from "/warungedin.png";
 
 type VerifyState = "idle" | "verifying" | "success" | "error" | "already_verified";
 

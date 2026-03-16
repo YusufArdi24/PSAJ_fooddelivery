@@ -6,7 +6,7 @@ import { Label } from "../components/ui/label";
 import { Eye, EyeOff, ChefHat, UtensilsCrossed, Coffee, Croissant } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { toast } from "../components/ui/use-toast";
-import Logo from "../assets/warungedin.png";
+import Logo from "/warungedin.png";
 import { useGoogleLogin } from "@react-oauth/google";
 import { googleAuthCustomer } from "../services/authService";
 

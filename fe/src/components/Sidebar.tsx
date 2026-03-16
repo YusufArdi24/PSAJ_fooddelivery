@@ -1,5 +1,5 @@
 import { LayoutDashboard, ShoppingBag, Settings, LogOut, ChefHat, UtensilsCrossed, Coffee, Croissant } from "lucide-react";
-import Logo from "../assets/warungedin.png";
+import Logo from "/warungedin.png";
 
 interface SidebarProps {
   activeItem: string;

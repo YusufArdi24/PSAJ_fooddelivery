@@ -6,7 +6,7 @@ import { Label } from "../components/ui/label";
 import { Eye, EyeOff, ChefHat, CheckCircle } from "lucide-react";
 import { toast } from "../components/ui/use-toast";
 import { resetPassword } from "../services/authService";
-import Logo from "../assets/warungedin.png";
+import Logo from "/warungedin.png";
 
 interface FormErrors {
   password?: string;

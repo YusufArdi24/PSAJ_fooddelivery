@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import warungEdinLogo from "../assets/warungedin.png";
+import warungEdinLogo from "/warungedin.png";
 
 interface SplashScreenProps {
   onDone: () => void;
