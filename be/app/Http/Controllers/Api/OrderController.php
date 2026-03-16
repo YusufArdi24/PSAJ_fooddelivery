@@ -22,8 +22,12 @@ class OrderController extends Controller
                      ->where('hidden_from_customer', false)
                      ->with(['orderDetails.menu.activePromo', 'payment'])
                      ->whereHas('payment', function ($q) {
-                         // Only show orders with successful payment
-                         $q->where('payment_status', 'paid');
+                         // Show orders with successful payment OR pending COD/cash orders
+                         $q->where('payment_status', 'paid')
+                           ->orWhere(function($subQ) {
+                               $subQ->whereIn('payment_method', ['cash', 'cod'])
+                                    ->where('payment_status', 'pending');
+                           });
                      })
                      ->orderBy('created_at', 'desc')
                      ->paginate($request->get('per_page', 10));

@@ -35,7 +35,7 @@ interface CartSidebarProps {
   onUpdateAddressNotes?: (notes: string) => void;
   note: string;
   onUpdateNote: (note: string) => void;
-  onConfirmPayment: () => void;
+  onConfirmPayment: (paymentMethod: "online" | "cod") => void;
   isPlacingOrder?: boolean;
 }
 
@@ -59,6 +59,7 @@ const CartSidebar = ({
   isPlacingOrder = false,
 }: CartSidebarProps) => {
   const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<"online" | "cod">("online");
   
   const subtotal = cartItems.reduce((total, item) => total + (item.price * item.quantity), 0);
   const grandTotal = subtotal;
@@ -73,8 +74,8 @@ const CartSidebar = ({
   };
 
   const handleConfirmPaymentClick = () => {
-    // Directly trigger payment confirmation - Midtrans modal will appear
-    onConfirmPayment();
+    // Pass the selected payment method to the payment handler
+    onConfirmPayment(paymentMethod);
   };
 
   if (!isOpen) return null;
@@ -305,6 +306,42 @@ const CartSidebar = ({
                   placeholder="Tolong tambahin sambelnya yang banyak"
                   className="w-full h-16 p-2 text-sm bg-muted border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent resize-none placeholder:text-muted-foreground transition-all duration-200 focus:scale-[1.02]"
                 />
+              </div>
+
+              {/* Payment Method Selection */}
+              <div className="p-4 border-t border-border animate-in slide-in-from-bottom-2 duration-1000">
+                <h3 className="text-sm font-medium text-foreground mb-3">Metode Pembayaran</h3>
+                <div className="space-y-2">
+                  <label className="flex items-center gap-3 p-3 border border-border rounded-lg cursor-pointer hover:bg-muted/50 transition-all duration-200" style={{ borderColor: paymentMethod === "online" ? "var(--color-primary)" : "" }}>
+                    <input 
+                      type="radio" 
+                      name="paymentMethod" 
+                      value="online" 
+                      checked={paymentMethod === "online"}
+                      onChange={() => setPaymentMethod("online")}
+                      className="w-4 h-4 text-primary cursor-pointer"
+                    />
+                    <div className="flex-1">
+                      <div className="font-medium text-sm">Pembayaran Online</div>
+                      <div className="text-xs text-muted-foreground">Gunakan Midtrans (Transfer Bank, E-Wallet, dll)</div>
+                    </div>
+                  </label>
+                  
+                  <label className="flex items-center gap-3 p-3 border border-border rounded-lg cursor-pointer hover:bg-muted/50 transition-all duration-200" style={{ borderColor: paymentMethod === "cod" ? "var(--color-primary)" : "" }}>
+                    <input 
+                      type="radio" 
+                      name="paymentMethod" 
+                      value="cod" 
+                      checked={paymentMethod === "cod"}
+                      onChange={() => setPaymentMethod("cod")}
+                      className="w-4 h-4 text-primary cursor-pointer"
+                    />
+                    <div className="flex-1">
+                      <div className="font-medium text-sm">Pembayaran COD</div>
+                      <div className="text-xs text-muted-foreground">Bayar saat pesanan tiba</div>
+                    </div>
+                  </label>
+                </div>
               </div>
             </>
           )}

@@ -307,7 +307,7 @@ const Index = () => {
     });
   };
 
-  const handleConfirmPayment = async () => {
+  const handleConfirmPayment = async (paymentMethod: "online" | "cod" = "online") => {
     if (cartItems.length === 0) return;
 
     // Guard: require email verification
@@ -353,11 +353,10 @@ const Index = () => {
         selected_variant: item.selected_variant,
       }));
 
-      // Create order via API with 'online' as default payment method
-      // Actual method will be determined by user selection in Midtrans
+      // Create order via API with selected payment method
       const response = await createOrder({
         items: orderItems,
-        payment_method: "online",
+        payment_method: paymentMethod,
         notes: note || undefined,
         delivery_address: deliverAddress || undefined,
         delivery_address_label: addressLabel || undefined,
@@ -372,6 +371,42 @@ const Index = () => {
           throw new Error("Order ID not found in response");
         }
 
+        // Handle offline payment (COD)
+        if (paymentMethod === "cod") {
+          // Clear cart immediately for offline payment
+          setCartItems([]);
+          setIsCartOpen(false);
+          setNote("");
+          // Reset delivery address to default
+          if (user.address) {
+            setDeliverAddress(user.address);
+          }
+          if (user.address_label) {
+            setAddressLabel(user.address_label);
+          } else {
+            setAddressLabel("");
+          }
+          if (user.address_notes) {
+            setAddressNotes(user.address_notes);
+          } else {
+            setAddressNotes("");
+          }
+
+          // Show success toast
+          toast({
+            title: "Pesanan Berhasil Dibuat",
+            description: "Pesanan Anda telah berhasil dibuat. Silakan bayar saat pesanan tiba.",
+          });
+
+          // Navigate to order history
+          setTimeout(() => {
+            navigate("/order-history");
+          }, 2000);
+
+          return;
+        }
+
+        // Handle online payment (Midtrans)
         // Show loading toast
         toast({
           title: "Mempersiapkan pembayaran...",
@@ -381,7 +416,7 @@ const Index = () => {
         try {
           // Create Snap transaction without payment method restriction
           // This allows Midtrans to show ALL payment methods
-          const snapResponse = await createSnapTransaction(orderId, "online");
+          const snapResponse = await createSnapTransaction(orderId, paymentMethod);
           
           if (!snapResponse.success) {
             throw new Error(snapResponse.message || "Failed to create payment transaction");

@@ -16,25 +16,81 @@ class ReportController extends Controller
     public function ordersSummary(Request $request)
     {
         $period = $request->get('period', 'all');
+        $filterType = $request->get('filter_type', 'preset');
         $query = Order::with(['customer', 'orderDetails.menu.activePromo'])
             ->where('hidden_from_admin', false);
 
         // Apply date filters
         $title = 'Semua Waktu';
-        switch ($period) {
-            case 'today':
-                $query->whereDate('order_date', Carbon::today());
-                $title = 'Hari Ini - ' . Carbon::today()->format('d/m/Y');
-                break;
-            case 'this_month':
-                $query->whereMonth('order_date', Carbon::now()->month)
-                      ->whereYear('order_date', Carbon::now()->year);
-                $title = 'Bulan ' . Carbon::now()->locale('id')->monthName . ' ' . Carbon::now()->year;
-                break;
-            case 'this_year':
-                $query->whereYear('order_date', Carbon::now()->year);
-                $title = 'Tahun ' . Carbon::now()->year;
-                break;
+        
+        if ($filterType === 'date_range') {
+            // Custom date range filter
+            $startDate = $request->get('start_date');
+            $endDate = $request->get('end_date');
+            
+            if ($startDate && $endDate) {
+                $startDate = Carbon::parse($startDate)->startOfDay();
+                $endDate = Carbon::parse($endDate)->endOfDay();
+                
+                $query->whereBetween('order_date', [$startDate, $endDate]);
+                
+                $startFormatted = $startDate->locale('id')->format('d F Y');
+                $endFormatted = $endDate->locale('id')->format('d F Y');
+                $title = "$startFormatted sampai $endFormatted";
+            }
+        } elseif ($filterType === 'month_range') {
+            // Month range filter
+            $startMonth = $request->get('start_month');
+            $endMonth = $request->get('end_month');
+            $year = $request->get('month_year');
+            
+            if ($startMonth && $endMonth && $year) {
+                $startDate = Carbon::createFromDate($year, $startMonth, 1)->startOfDay();
+                $endDate = Carbon::createFromDate($year, $endMonth, 1)->endOfMonth()->endOfDay();
+                
+                $query->whereBetween('order_date', [$startDate, $endDate]);
+                
+                $monthNames = [
+                    '01' => 'Januari', '02' => 'Februari', '03' => 'Maret',
+                    '04' => 'April', '05' => 'Mei', '06' => 'Juni',
+                    '07' => 'Juli', '08' => 'Agustus', '09' => 'September',
+                    '10' => 'Oktober', '11' => 'November', '12' => 'Desember',
+                ];
+                
+                $startMonthName = $monthNames[$startMonth] ?? '';
+                $endMonthName = $monthNames[$endMonth] ?? '';
+                $title = "$startMonthName - $endMonthName $year";
+            }
+        } elseif ($filterType === 'year_range') {
+            // Year range filter
+            $startYear = $request->get('start_year');
+            $endYear = $request->get('end_year');
+            
+            if ($startYear && $endYear) {
+                $startDate = Carbon::createFromDate($startYear, 1, 1)->startOfDay();
+                $endDate = Carbon::createFromDate($endYear, 12, 31)->endOfDay();
+                
+                $query->whereBetween('order_date', [$startDate, $endDate]);
+                
+                $title = "$startYear - $endYear";
+            }
+        } else {
+            // Preset period filter
+            switch ($period) {
+                case 'today':
+                    $query->whereDate('order_date', Carbon::today());
+                    $title = 'Hari Ini - ' . Carbon::today()->format('d/m/Y');
+                    break;
+                case 'this_month':
+                    $query->whereMonth('order_date', Carbon::now()->month)
+                          ->whereYear('order_date', Carbon::now()->year);
+                    $title = 'Bulan ' . Carbon::now()->locale('id')->monthName . ' ' . Carbon::now()->year;
+                    break;
+                case 'this_year':
+                    $query->whereYear('order_date', Carbon::now()->year);
+                    $title = 'Tahun ' . Carbon::now()->year;
+                    break;
+            }
         }
 
         $orders = $query->orderBy('order_date', 'desc')->get();
@@ -102,7 +158,27 @@ class ReportController extends Controller
                 'defaultFont' => 'sans-serif'
             ]);
             
-            $filename = 'laporan-pesanan-' . strtolower(str_replace(' ', '-', $period)) . '-' . date('Y-m-d') . '.pdf';
+            $filename = 'laporan-pesanan-';
+            
+            if ($filterType === 'preset') {
+                $filename .= strtolower(str_replace(' ', '-', $period));
+            } elseif ($filterType === 'date_range') {
+                $startDate = Carbon::parse($request->get('start_date'))->format('Y-m-d');
+                $endDate = Carbon::parse($request->get('end_date'))->format('Y-m-d');
+                $filename .= "custom-{$startDate}-ke-{$endDate}";
+            } elseif ($filterType === 'month_range') {
+                $startMonth = $request->get('start_month');
+                $endMonth = $request->get('end_month');
+                $year = $request->get('month_year');
+                $filename .= "bulan-{$startMonth}-ke-{$endMonth}-{$year}";
+            } elseif ($filterType === 'year_range') {
+                $startYear = $request->get('start_year');
+                $endYear = $request->get('end_year');
+                $filename .= "tahun-{$startYear}-ke-{$endYear}";
+            }
+            
+            $filename .= '-' . date('Y-m-d') . '.pdf';
+            
             return $pdf->download($filename);
         }
 
