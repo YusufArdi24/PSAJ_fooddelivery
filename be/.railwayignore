@@ -1,0 +1,10 @@
+node_modules
+.git
+.env.local
+.env
+storage/*.log
+bootstrap/cache/*
+storage/app/public/*
+.DS_Store
+vendor/
+*.log
