@@ -71,12 +71,12 @@ class PendingRegistrationController extends Controller
         );
 
         try {
-            // Queue email asynchronously - won't block registration if email service fails
-            Mail::to($request->email)->queue(new OtpVerificationMail($otp, $request->name));
-            Log::info('OTP email queued successfully', ['email' => $request->email]);
+            // Send email immediately with retry logic - won't block registration if email service fails
+            $this->sendEmailWithRetry($request->email, $otp, $request->name);
+            Log::info('OTP email sent successfully', ['email' => $request->email]);
         } catch (\Exception $e) {
-            // Log error but don't fail registration - email will be retried or manually sent later
-            Log::warning('Failed to queue OTP email for registration', [
+            // Log error but don't fail registration - email can be retried manually
+            Log::warning('Failed to send OTP email for registration', [
                 'email' => $request->email,
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
@@ -189,11 +189,11 @@ class PendingRegistrationController extends Controller
         );
 
         try {
-            // Queue email asynchronously - won't block Google auth if email service fails
-            Mail::to($email)->queue(new OtpVerificationMail($otp, $name));
+            // Send email immediately with retry logic - won't block Google auth if email service fails
+            $this->sendEmailWithRetry($email, $otp, $name);
         } catch (\Exception $e) {
             // Log error but don't fail Google auth
-            Log::warning('Failed to queue OTP email for Google auth:', [
+            Log::warning('Failed to send OTP email for Google auth:', [
                 'email' => $email,
                 'error' => $e->getMessage(),
             ]);
@@ -311,11 +311,11 @@ class PendingRegistrationController extends Controller
         ]);
 
         try {
-            // Queue email asynchronously - won't block OTP resend if email service fails
-            Mail::to($pending->email)->queue(new OtpVerificationMail($otp, $pending->name));
+            // Send email immediately with retry logic - won't block OTP resend if email service fails
+            $this->sendEmailWithRetry($pending->email, $otp, $pending->name);
         } catch (\Exception $e) {
             // Log error but don't fail OTP resend
-            Log::warning('Failed to queue OTP resend email:', [
+            Log::warning('Failed to send OTP resend email:', [
                 'email' => $pending->email,
                 'error' => $e->getMessage(),
             ]);
@@ -426,5 +426,41 @@ class PendingRegistrationController extends Controller
                 'token_type' => 'Bearer',
             ],
         ], 201);
+    }
+
+    /**
+     * Send email with retry logic (3 attempts with exponential backoff)
+     * Won't block the main request if email fails
+     */
+    private function sendEmailWithRetry($email, $otp, $name, $maxRetries = 3)
+    {
+        $lastException = null;
+        
+        for ($attempt = 1; $attempt <= $maxRetries; $attempt++) {
+            try {
+                Mail::to($email)->send(new OtpVerificationMail($otp, $name));
+                Log::info("Email sent successfully to {$email} on attempt {$attempt}");
+                return true;
+            } catch (\Exception $e) {
+                $lastException = $e;
+                Log::warning("Email send failed (attempt {$attempt}/{$maxRetries})", [
+                    'email' => $email,
+                    'error' => $e->getMessage(),
+                ]);
+                
+                // Exponential backoff: 1s, 2s, 4s between retries
+                if ($attempt < $maxRetries) {
+                    sleep(2 ** ($attempt - 1));
+                }
+            }
+        }
+        
+        // All retries failed - log final error
+        Log::error("Failed to send email after {$maxRetries} attempts", [
+            'email' => $email,
+            'error' => $lastException?->getMessage(),
+        ]);
+        
+        throw $lastException ?? new \Exception('Failed to send email');
     }
 }
