@@ -17,6 +17,9 @@ return Application::configure(basePath: dirname(__DIR__))
             'admin' => \App\Http\Middleware\AdminMiddleware::class,
             'storage.cors' => \App\Http\Middleware\StorageCorsMiddleware::class,
         ]);
+        
+        // Apply API CORS middleware to all API routes
+        $middleware->append(\App\Http\Middleware\ApiCorsMiddleware::class);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //
