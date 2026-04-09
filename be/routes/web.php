@@ -11,6 +11,14 @@ Route::get('/', function () {
     return view('welcome');
 });
 
+// Livewire routes for admin panel
+\Livewire\Livewire::setUpdateRoute(function ($handle) {
+    return Route::post('/livewire/update', $handle);
+});
+\Livewire\Livewire::setScriptRoute(function ($handle) {
+    return Route::get('/livewire/livewire.js', $handle);
+});
+
 // Storage files with CORS support
 Route::middleware(['storage.cors'])->group(function () {
     Route::get('/storage/{path}', function ($path) {

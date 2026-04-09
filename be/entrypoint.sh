@@ -165,7 +165,14 @@ echo ""
 echo "   Current .env values:"
 grep "^APP_\|^DB_CONNECTION\|^DB_HOST" .env | head -10
 echo ""
-
+# Step 6.5: Install Composer dependencies (CRITICAL - needed for Livewire!)
+echo "6️⃣ .5️⃣  Installing Composer dependencies..."
+if [ -f "composer.json" ]; then
+    composer install --no-dev --optimize-autoloader --no-interaction 2>&1 | grep -E "(installed|Installing|Nothing)" | head -3
+    echo "   ✅ Composer dependencies installed"
+else
+    echo "   ⚠️ composer.json not found"
+fi
 # Step 7: AGGRESSIVELY clear all Laravel caches
 echo "6️⃣  Clearing Laravel caches (aggressive)..."
 rm -rf bootstrap/cache/config.php bootstrap/cache/*.php
@@ -182,23 +189,34 @@ php artisan storage:link --no-interaction 2>/dev/null || echo "   (storage:link 
 chmod -R 755 public 2>/dev/null || true
 echo "   ✅ Storage configured"
 
+# Step 7.8: Install Composer dependencies (CRITICAL!)
+echo "7️⃣ .8️⃣  Installing Composer dependencies..."
+if [ -f "composer.json" ]; then
+    composer install --no-dev --optimize-autoloader 2>&1 | tail -5
+    echo "   ✅ Composer dependencies installed"
+else
+    echo "   ⚠️ composer.json not found"
+fi
+
 # Step 8: Publish Assets (Livewire + Filament)
 echo "8️⃣  Publishing package assets..."
 mkdir -p public/vendor public/livewire
 
-# Publish Livewire assets aggressively
+# Publish Livewire assets
 echo "   Publishing Livewire..."
-php artisan livewire:publish --assets 2>&1 || true
-php artisan filament:publish 2>&1 || true
+php artisan livewire:publish --assets --force 2>&1 | tail -3 || true
+php artisan filament:publish --force 2>&1 | tail -3 || true
 
-# Ensure livewire.js exists
+# Ensure livewire.js exists - if not, Livewire will generate dynamically
 if [ ! -f "public/livewire/livewire.js" ]; then
-    echo "   Attempting alternative Livewire extraction..."
-    php artisan vendor:publish --tag=livewire-assets --force 2>&1 || true
+    echo "   ℹ️  Livewire will serve JS dynamically via route"
 fi
 
+# Verify vendors directory created
+ls -la public/vendor/livewire/ 2>/dev/null && echo "   ✅ Livewire vendor files found" || echo "   ℹ️  Livewire files will be generated on demand"
+
 chmod -R 755 public/vendor public/livewire 2>/dev/null || true
-echo "   ✅ Assets published successfully"
+echo "   ✅ Assets configuration complete"
 
 # Step 9: Run migrations (only if database configured)
 echo "9️⃣  Database migrations..."
