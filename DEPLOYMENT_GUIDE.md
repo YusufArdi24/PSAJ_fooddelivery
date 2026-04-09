@@ -47,13 +47,35 @@ git push
 1. **Login ke Railway Dashboard** → https://railway.app/dashboard
 2. **Buat Project Baru**:
    - Klik "+ New Project"
-   - Pilih "Provision MySQL"
-   - Tunggu database siap
+   - Pilih "Provision MySQL" → Database auto-create
+   - Tunggu database siap (status: ✅ Running)
 
-3. **Setup Environment Variables**:
-   - Di Railway Dashboard, buka project Anda
+**Skema Railway Services**:
+```
+Your Railway Project
+├─ Service 1: GitHub Repo (Laravel App)
+│  ├─ Name: PSAJ_fooddelivery-be
+│  ├─ Source: GitHub repository
+│  └─ Tab "Variables" ← INPUT SEMUA .ENV VARIABLES DI SINI
+│
+└─ Service 2: MySQL Database
+   ├─ Name: MySQL
+   ├─ Auto-generated credentials
+   └─ Tidak perlu add variables manual
+```
+
+3. **Setup Environment Variables** ⚠️ **DI GITHUB REPO SERVICE BUKAN DATABASE**:
+   - Di Railway Dashboard, pilih **GitHub Repo service** (bukan MySQL)
    - Klik tab "Variables"
-   - Tambahkan semua variable dari `.env.example`:
+   - Railway sudah punya beberapa default variables (NODE_ENV, PORT, dll)
+   - **Jangan dihapus**, cukup **TAMBAHKAN** variable dari `.env.example` yang belum ada
+   - Update nilai jika ada yang berbeda untuk production
+
+**Catatan Penting**:
+- ✅ Masuk ke **GitHub Repo service** untuk add environment variables
+- ✅ **TAMBAHKAN** variable baru dari `.env.example` (jangan hapus default)
+- ❌ MySQL service hanya auto-generate, tidak perlu manual setup
+- Untuk database credentials, gunakan placeholder `${{ MYSQL_HOST }}`, `${{ MYSQL_PORT }}`, dll
 
 | Variable | Nilai |
 |----------|-------|
@@ -61,9 +83,9 @@ git push
 | `APP_NAME` | Warung Edin |
 | `APP_ENV` | production |
 | `APP_DEBUG` | false |
-| `APP_KEY` | Generate di local: `php artisan key:generate` |
-| `APP_URL` | https://your-backend-url.railway.app (update setelah deployment) |
-| `FRONTEND_URL` | https://your-frontend-url.vercel.app |
+| `APP_KEY` | Copy dari local: `base64:XbAzi6vg...` (dari output `php artisan key:generate`) |
+| `APP_URL` | **PENTING**: `https://${{RAILWAY_PUBLIC_DOMAIN}}` (Railway placeholder - auto-resolve ke domain sebenarnya) |
+| `FRONTEND_URL` | https://your-vercel-url.vercel.app |
 | `DB_CONNECTION` | mysql |
 | `DB_HOST` | ${{ MYSQL_HOST }} |
 | `DB_PORT` | ${{ MYSQL_PORT }} |

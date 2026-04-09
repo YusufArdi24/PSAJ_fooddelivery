@@ -353,7 +353,70 @@ php artisan migrate:fresh --force --seed
 
 ---
 
-## 🔍 General Debugging Steps
+## 9️⃣ Docker Build Failed: "Invalid URI"
+
+### Symptom
+```
+In Request.php line 355:
+Invalid URI.
+
+ERROR: failed to build: failed to solve...
+Script returned with error code 1
+```
+
+Terjadi saat Railway docker build dengan composer install.
+
+### Causes
+- `APP_URL` invalid atau placeholder saat docker build
+- Composer menjalankan `artisan package:discover` yang membutuhkan APP_URL valid
+- Railway env variables belum ter-load saat build time
+
+### Fix
+
+**Understanding the Process:**
+
+```
+.env.example:
+  APP_URL=http://localhost:8000
+  ↓ (digunakan saat Docker build)
+  
+Docker Build (Dockerfile):
+  composer install ← APP_URL harus valid saat ini
+  ↓
+  
+Railway Runtime Variables (override):
+  APP_URL=https://${{RAILWAY_PUBLIC_DOMAIN}} ← app akan gunakan ini saat live
+```
+
+**Step 1: Verify .env.example**
+
+Check APP_URL harus nilai valid (bukan placeholder):
+```
+APP_URL=http://localhost:8000  ✅ Valid untuk build
+```
+
+❌ Jangan:
+```
+APP_URL=${{RAILWAY_PUBLIC_DOMAIN}}  ❌ Placeholder tidak valid saat build
+```
+
+**Step 2: Railway Variables should override**
+
+Di Railway Dashboard → GitHub Repo Service → Variables:
+
+```
+APP_URL=https://${{RAILWAY_PUBLIC_DOMAIN}}
+```
+
+Railway placeholder ini akan auto-resolve saat runtime ✅
+
+**Step 3: Redeploy**
+
+```bash
+git commit & push → Railway redeploy dengan .env.example yang benar
+```
+
+---
 
 ### 1. Check Logs Everywhere
 
