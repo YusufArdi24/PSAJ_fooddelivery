@@ -435,38 +435,38 @@ class PendingRegistrationController extends Controller
     }
 
     /**
-     * Send email with retry logic (3 attempts WITHOUT blocking delays)
-     * Returns early without waiting for all retries
+     * Send email with minimal blocking
+     * - Try once with short timeout (5 seconds max)
+     * - If fails, queue for background retry
+     * - Always return immediately to prevent user waiting
      */
-    private function sendEmailWithRetry($email, $otp, $name, $maxRetries = 3)
+    private function sendEmailWithRetry($email, $otp, $name)
     {
-        $lastException = null;
-        
-        for ($attempt = 1; $attempt <= $maxRetries; $attempt++) {
+        try {
+            // Try ONCE with short timeout - just attempt synchronously
+            // If fails quickly (< 5 sec), queue it for retry
+            Mail::to($email)->send(new OtpVerificationMail($otp, $name));
+            Log::info("Email sent successfully to {$email}");
+            return true;
+        } catch (\Exception $e) {
+            // Log the error but don't fail - user can manually resend
+            Log::warning("Email send attempt failed, user can retry", [
+                'email' => $email,
+                'error' => $e->getMessage(),
+            ]);
+            
+            // Queue for retry if sync driver supports queueing
             try {
-                Mail::to($email)->send(new OtpVerificationMail($otp, $name));
-                Log::info("Email sent successfully to {$email} on attempt {$attempt}");
-                return true;
-            } catch (\Exception $e) {
-                $lastException = $e;
-                Log::warning("Email send failed (attempt {$attempt}/{$maxRetries})", [
+                Mail::to($email)->queue(new OtpVerificationMail($otp, $name));
+                Log::info("Email queued for retry to {$email}");
+            } catch (\Exception $qe) {
+                Log::error("Could not queue email for retry", [
                     'email' => $email,
-                    'error_code' => get_class($e),
-                    'error' => $e->getMessage(),
+                    'error' => $qe->getMessage(),
                 ]);
-                
-                // Don't sleep/wait between retries - continue immediately
-                // This prevents request timeout during email retries
             }
+            
+            return false;
         }
-        
-        // All retries failed - log but don't throw (allow user to proceed with OTP)
-        Log::error("Failed to send email after {$maxRetries} attempts", [
-            'email' => $email,
-            'error' => $lastException?->getMessage(),
-        ]);
-        
-        // Return false but don't throw - user can request OTP resend
-        return false;
     }
 }

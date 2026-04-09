@@ -17,7 +17,7 @@ MAIL_HOST=smtp.gmail.com                  ← Must be exact
 MAIL_PORT=587                             ← Must be 587 (not 465)
 MAIL_USERNAME=warungedin@gmail.com        ← Must be exact
 MAIL_PASSWORD=ytiyrvbnvrijgohh            ← Gmail App Password (16 chars)
-MAIL_TIMEOUT=120                          ← Must be 120 seconds
+MAIL_TIMEOUT=5                            ← 5 seconds max (fail fast if connection slow)
 ```
 
 **Do NOT missed any of above!**
