@@ -27,13 +27,17 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 # Copy application files
 COPY . .
 
+# Copy entrypoint script
+COPY entrypoint.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh
+
 # Create necessary directories
 RUN mkdir -p /var/log/nginx /var/cache/nginx
 
-# Copy .env from .env.example and set required variables for build/runtime
+# Copy .env from .env.example for build time
 RUN cp .env.example .env
 
-# Set runtime environment variables (APP_KEY and APP_URL from build config)
+# Set build-time environment variables for composer install
 ENV APP_KEY=base64:XbAzi6vg8BmX26gv/IrDr059QtHqeyoaOy4DoTIlUqU= \
     APP_URL=http://127.0.0.1:8000 \
     APP_ENV=production \
@@ -48,5 +52,5 @@ RUN php artisan package:discover --ansi || true
 # Expose port
 EXPOSE 8000
 
-# Start application with proper environment
-CMD ["sh", "-c", "export APP_URL=${APP_URL:-http://127.0.0.1:8000} && php artisan migrate --force && php artisan serve --host=0.0.0.0 --port=8000"]
+# Use entrypoint script for proper environment setup at runtime
+ENTRYPOINT ["/app/entrypoint.sh"]
