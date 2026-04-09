@@ -34,21 +34,17 @@ RUN chmod +x /app/entrypoint.sh
 # Create necessary directories
 RUN mkdir -p /var/log/nginx /var/cache/nginx
 
-# Copy .env from .env.example for build time
-RUN cp .env.example .env && \
-    sed -i 's|^APP_URL=.*|APP_URL=http://127.0.0.1:8000|g' .env
-
-# Set build-time environment variables for composer install
+# Set build-time environment variables for composer install ONLY
 ENV APP_KEY=base64:XbAzi6vg8BmX26gv/IrDr059QtHqeyoaOy4DoTIlUqU= \
-    APP_URL=http://127.0.0.1:8000 \
+    APP_URL=http://127.0.0.1 \
     APP_ENV=production \
     APP_DEBUG=false
 
 # Install dependencies with --no-scripts to avoid artisan commands that need APP_URL
 RUN composer install --no-dev --no-scripts --optimize-autoloader
 
-# DO NOT run any artisan commands during build - they need valid APP_URL
-# Let entrypoint.sh handle all artisan commands at runtime
+# IMPORTANT: Do NOT create .env or run artisan commands during build!
+# entrypoint.sh will handle everything at runtime
 
 # Expose port
 EXPOSE 8000
