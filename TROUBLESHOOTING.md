@@ -373,47 +373,49 @@ Terjadi saat Railway docker build dengan composer install.
 
 ### Fix
 
-**Understanding the Process:**
-
+**Root Cause:**
 ```
-.env.example:
-  APP_URL=http://localhost:8000
-  ↓ (digunakan saat Docker build)
-  
-Docker Build (Dockerfile):
-  composer install ← APP_URL harus valid saat ini
-  ↓
-  
-Railway Runtime Variables (override):
-  APP_URL=https://${{RAILWAY_PUBLIC_DOMAIN}} ← app akan gunakan ini saat live
+Saat Docker build:
+1. .env belum tersedia di container
+2. composer install menjalankan post-autoload-dump hooks
+3. @php artisan package:discover memerlukan APP_URL yang valid
+4. APP_URL tidak valid → ERROR: Invalid URI
 ```
 
-**Step 1: Verify .env.example**
+**Solusi yang sudah diterapkan:**
 
-Check APP_URL harus nilai valid (bukan placeholder):
+**1. Dockerfile dengan APP_URL untuk build time**:
+```dockerfile
+ENV APP_URL=http://localhost:8000
+
+RUN composer install --no-dev --no-scripts --optimize-autoloader
+
+RUN php artisan package:discover --ansi || true
 ```
-APP_URL=http://localhost:8000  ✅ Valid untuk build
+
+**2. railway.toml untuk Dockerfile build**:
+```toml
+[build]
+builder = "dockerfile"
+dockerfile = "Dockerfile"
 ```
 
-❌ Jangan:
-```
-APP_URL=${{RAILWAY_PUBLIC_DOMAIN}}  ❌ Placeholder tidak valid saat build
-```
-
-**Step 2: Railway Variables should override**
-
-Di Railway Dashboard → GitHub Repo Service → Variables:
-
+**3. Pastikan Railway Variables punya APP_URL**:
 ```
 APP_URL=https://${{RAILWAY_PUBLIC_DOMAIN}}
 ```
 
-Railway placeholder ini akan auto-resolve saat runtime ✅
+**Hasil:**
+- ✅ Docker build tidak error (APP_URL valid saat build)
+- ✅ Railway runtime override dengan actual domain
+- ✅ Migrations run saat startup
 
-**Step 3: Redeploy**
+**Jika masih error:**
 
+Check log di Railway Deployments tab:
 ```bash
-git commit & push → Railway redeploy dengan .env.example yang benar
+# Pastikan tidak ada syntax error di Dockerfile
+# Pastikan APP_URL env var di set di Railway
 ```
 
 ---
