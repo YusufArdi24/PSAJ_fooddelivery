@@ -190,12 +190,18 @@ class PendingRegistrationController extends Controller
 
         try {
             // Send email immediately with retry logic - won't block Google auth if email service fails
-            $this->sendEmailWithRetry($email, $otp, $name);
+            $emailSent = $this->sendEmailWithRetry($email, $otp, $name);
+            if ($emailSent) {
+                Log::info('OTP email sent successfully for Google auth', ['email' => $email]);
+            } else {
+                Log::warning('OTP email failed to send after retries, but user can manually request resend', ['email' => $email]);
+            }
         } catch (\Exception $e) {
-            // Log error but don't fail Google auth
-            Log::warning('Failed to send OTP email for Google auth:', [
+            // Log error but don't fail Google auth - allow user to proceed with resend
+            Log::error('Unexpected error sending OTP email for Google auth:', [
                 'email' => $email,
                 'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
             ]);
         }
 
@@ -429,8 +435,8 @@ class PendingRegistrationController extends Controller
     }
 
     /**
-     * Send email with retry logic (3 attempts with exponential backoff)
-     * Won't block the main request if email fails
+     * Send email with retry logic (3 attempts WITHOUT blocking delays)
+     * Returns early without waiting for all retries
      */
     private function sendEmailWithRetry($email, $otp, $name, $maxRetries = 3)
     {
@@ -445,22 +451,22 @@ class PendingRegistrationController extends Controller
                 $lastException = $e;
                 Log::warning("Email send failed (attempt {$attempt}/{$maxRetries})", [
                     'email' => $email,
+                    'error_code' => get_class($e),
                     'error' => $e->getMessage(),
                 ]);
                 
-                // Exponential backoff: 1s, 2s, 4s between retries
-                if ($attempt < $maxRetries) {
-                    sleep(2 ** ($attempt - 1));
-                }
+                // Don't sleep/wait between retries - continue immediately
+                // This prevents request timeout during email retries
             }
         }
         
-        // All retries failed - log final error
+        // All retries failed - log but don't throw (allow user to proceed with OTP)
         Log::error("Failed to send email after {$maxRetries} attempts", [
             'email' => $email,
             'error' => $lastException?->getMessage(),
         ]);
         
-        throw $lastException ?? new \Exception('Failed to send email');
+        // Return false but don't throw - user can request OTP resend
+        return false;
     }
 }
