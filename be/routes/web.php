@@ -11,6 +11,19 @@ Route::get('/', function () {
     return view('welcome');
 });
 
+// TEST ENDPOINT
+Route::get('/_test-livewire', function () {
+    $publicPath = public_path('livewire/livewire.js');
+    $vendorPath = base_path('vendor/livewire/livewire/dist/livewire.js');
+    
+    return response()->json([
+        'public_exists' => file_exists($publicPath),
+        'vendor_exists' => file_exists($vendorPath),
+        'public_path' => $publicPath,
+        'vendor_path' => $vendorPath,
+    ]);
+});
+
 /**
  * LIVEWIRE JS ROUTE - MUST BE FIRST BEFORE OTHER ROUTES
  * This route serves the Livewire JavaScript file which is critical for Filament admin panel
