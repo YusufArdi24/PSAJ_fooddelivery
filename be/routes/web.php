@@ -11,6 +11,10 @@ Route::get('/', function () {
     return view('welcome');
 });
 
+Route::get('/test123', function () {
+    return 'TEST ROUTE WORKS';
+});
+
 // Serve Livewire JS if it exists on disk
 Route::get('/livewire/livewire.js', function () {
     $path = public_path('livewire/livewire.js');
