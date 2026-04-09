@@ -20,6 +20,11 @@ class ResendTransport extends AbstractTransport
 
     protected function doSend(SentMessage $message): void
     {
+        // Check if API key is configured
+        if (empty($this->key)) {
+            throw new \Exception('RESEND_API_KEY environment variable is not set. Configure it in Railway environment variables.');
+        }
+
         $symfonMessage = $message->getOriginalMessage();
         
         // Convert to Email object for easier access
