@@ -30,8 +30,14 @@ COPY . .
 # Create necessary directories
 RUN mkdir -p /var/log/nginx /var/cache/nginx
 
-# Set temporary APP_URL for build time only (will be overridden at runtime by railway.toml)
-ENV APP_URL=http://localhost
+# Copy .env from .env.example and set required variables for build/runtime
+RUN cp .env.example .env
+
+# Set runtime environment variables (APP_KEY and APP_URL from build config)
+ENV APP_KEY=base64:XbAzi6vg8BmX26gv/IrDr059QtHqeyoaOy4DoTIlUqU= \
+    APP_URL=http://127.0.0.1:8000 \
+    APP_ENV=production \
+    APP_DEBUG=false
 
 # Install dependencies with --no-scripts to avoid artisan commands that need APP_URL
 RUN composer install --no-dev --no-scripts --optimize-autoloader
@@ -42,5 +48,5 @@ RUN php artisan package:discover --ansi || true
 # Expose port
 EXPOSE 8000
 
-# Start application
-CMD ["sh", "-c", "php artisan migrate --force && php artisan serve --host=0.0.0.0 --port=8000"]
+# Start application with proper environment
+CMD ["sh", "-c", "export APP_URL=${APP_URL:-http://127.0.0.1:8000} && php artisan migrate --force && php artisan serve --host=0.0.0.0 --port=8000"]
