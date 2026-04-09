@@ -5,4 +5,4 @@ dockerfile = "Dockerfile"
 [deploy]
 restartPolicyType = "on_failure"
 restartPolicyMaxRetries = 5
-startCommand = "php artisan migrate --force && php artisan serve --host=0.0.0.0 --port=8000"
+startCommand = "php artisan serve --host=0.0.0.0 --port=8000"
