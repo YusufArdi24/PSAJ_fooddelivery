@@ -34,7 +34,7 @@ class AppServiceProvider extends ServiceProvider
             try {
                 \Livewire\Livewire::routes();
             } catch (\Throwable $e) {
-                \Log::warning('Livewire routing failed: ' . $e->getMessage());
+                Log::warning('Livewire routing failed: ' . $e->getMessage());
             }
         }
 
