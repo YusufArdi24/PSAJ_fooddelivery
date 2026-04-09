@@ -67,23 +67,35 @@ fi
 # Step 5: VERIFY .env was written correctly
 echo "5️⃣  Verifying .env configuration..."
 FINAL_URL=$(grep "^APP_URL=" .env | cut -d= -f2-)
+FINAL_DB_CONNECTION=$(grep "^DB_CONNECTION=" .env | cut -d= -f2-)
+FINAL_DB_HOST=$(grep "^DB_HOST=" .env | cut -d= -f2-)
 echo "   Stored APP_URL: $FINAL_URL"
+echo "   Stored DB_CONNECTION: $FINAL_DB_CONNECTION"
+echo "   Stored DB_HOST: $FINAL_DB_HOST"
 
 if [ -z "$FINAL_URL" ] || [ "$FINAL_URL" = "http://localhost" ]; then
     echo "   ⚠️ Invalid APP_URL in .env, fixing..."
     sed -i "s|^APP_URL=.*|APP_URL=http://127.0.0.1:8000|" .env
 fi
 
+if [ "$FINAL_DB_CONNECTION" != "mysql" ]; then
+    echo "   ⚠️ Invalid DB_CONNECTION! Must be mysql, fixing..."
+    sed -i "s|^DB_CONNECTION=.*|DB_CONNECTION=mysql|" .env
+fi
+
 # Step 6: Output .env for verification
 echo ""
 echo "   Current .env values:"
-grep "^APP_" .env | head -5
+grep "^APP_\|^DB_CONNECTION\|^DB_HOST" .env | head -10
 echo ""
 
-# Step 7: Clear all Laravel caches
-echo "6️⃣  Clearing Laravel caches..."
+# Step 7: AGGRESSIVELY clear all Laravel caches
+echo "6️⃣  Clearing Laravel caches (aggressive)..."
+rm -rf bootstrap/cache/config.php bootstrap/cache/*.php
 php artisan config:clear --no-interaction 2>/dev/null || echo "   (config:clear skipped)"
 php artisan cache:clear --no-interaction 2>/dev/null || echo "   (cache:clear skipped)"
+php artisan view:clear --no-interaction 2>/dev/null || echo "   (view:clear skipped)"
+echo "   Cache cleared successfully"
 
 # Step 8: Run migrations (only if database configured)
 echo "7️⃣  Database migrations..."
@@ -98,6 +110,7 @@ echo ""
 echo "========================================="
 echo "   ✅ Starting Laravel Server"
 echo "   URL: $(grep '^APP_URL=' .env | cut -d= -f2-)"
+echo "   DB Connection: $(grep '^DB_CONNECTION=' .env | cut -d= -f2-)"
 echo "   Mode: $(grep '^APP_ENV=' .env | cut -d= -f2-)"
 echo "========================================="
 echo ""
