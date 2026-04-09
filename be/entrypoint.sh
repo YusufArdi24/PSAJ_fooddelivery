@@ -174,11 +174,20 @@ php artisan cache:clear --no-interaction 2>/dev/null || echo "   (cache:clear sk
 php artisan view:clear --no-interaction 2>/dev/null || echo "   (view:clear skipped)"
 echo "   Cache cleared successfully"
 
-# Step 8: Publish Filament Assets
-echo "8️⃣  Publishing Filament assets..."
-php artisan filament:publish --no-interaction 2>/dev/null || echo "   (Filament publish skipped)"
-mkdir -p public/vendor/filament
-echo "   ✅ Filament assets ready"
+# Step 7.5: Ensure public/storage exists
+echo "7️⃣ .5️⃣  Setting up storage symlink..."
+rm -rf public/storage 2>/dev/null
+php artisan storage:link --no-interaction 2>/dev/null || echo "   (storage:link skipped)"
+chmod -R 755 public 2>/dev/null || true
+echo "   ✅ Storage configured"
+
+# Step 8: Publish Assets (Livewire + Filament)
+echo "8️⃣  Publishing package assets..."
+mkdir -p public/vendor
+php artisan livewire:publish --assets --no-interaction 2>&1 | grep -v "^$" | tail -3 || echo "   (Livewire publish skipped)"
+php artisan filament:publish --no-interaction 2>&1 | grep -v "^$" | tail -3 || echo "   (Filament publish skipped)"
+chmod -R 755 public/vendor 2>/dev/null || true
+echo "   ✅ Assets published successfully"
 
 # Step 9: Run migrations (only if database configured)
 echo "9️⃣  Database migrations..."
