@@ -55,26 +55,41 @@ sed -i "s|^APP_NAME=.*|APP_NAME=\"$APP_NAME\"|" .env
 # CRITICAL: Ensure DB_CONNECTION is ALWAYS mysql (not sqlite!)
 sed -i "s|^DB_CONNECTION=.*|DB_CONNECTION=mysql|" .env
 
-# Step 3.5: Handle Railway Email/MAIL variables
+# Step 3.5: Handle Email Configuration  
 echo "3.5️⃣  Configuring email service..."
-if [ ! -z "$MAIL_MAILER" ]; then sed -i "s|^MAIL_MAILER=.*|MAIL_MAILER=$MAIL_MAILER|" .env; fi
 
-# Convert "tls" scheme to "smtp" (Symfony Mailer compatibility)
-if [ ! -z "$MAIL_SCHEME" ]; then
-  if [ "$MAIL_SCHEME" = "tls" ]; then
-    MAIL_SCHEME="smtp"
-    echo "   Converting MAIL_SCHEME: tls → smtp (Symfony Mailer compat)"
-  fi
-  sed -i "s|^MAIL_SCHEME=.*|MAIL_SCHEME=$MAIL_SCHEME|" .env
+if [ ! -z "$MAIL_MAILER" ]; then 
+    sed -i "s|^MAIL_MAILER=.*|MAIL_MAILER=$MAIL_MAILER|" .env
+    
+    if [ "$MAIL_MAILER" = "resend" ]; then
+        echo "   Using Resend cloud email API"
+        if [ ! -z "$RESEND_API_KEY" ]; then
+            sed -i "s|^RESEND_API_KEY=.*|RESEND_API_KEY=$RESEND_API_KEY|" .env
+        fi
+    elif [ "$MAIL_MAILER" = "sendgrid" ]; then
+        echo "   Using SendGrid email driver"
+        if [ ! -z "$SENDGRID_API_KEY" ]; then
+            sed -i "s|^SENDGRID_API_KEY=.*|SENDGRID_API_KEY=$SENDGRID_API_KEY|" .env
+        fi
+    elif [ "$MAIL_MAILER" = "smtp" ]; then
+        echo "   Using SMTP email driver"
+        if [ ! -z "$MAIL_SCHEME" ]; then
+            if [ "$MAIL_SCHEME" = "tls" ]; then
+                MAIL_SCHEME="smtp"
+                echo "   Converting MAIL_SCHEME: tls → smtp (Symfony Mailer compat)"
+            fi
+            sed -i "s|^MAIL_SCHEME=.*|MAIL_SCHEME=$MAIL_SCHEME|" .env
+        fi
+        if [ ! -z "$MAIL_HOST" ]; then sed -i "s|^MAIL_HOST=.*|MAIL_HOST=$MAIL_HOST|" .env; fi
+        if [ ! -z "$MAIL_PORT" ]; then sed -i "s|^MAIL_PORT=.*|MAIL_PORT=$MAIL_PORT|" .env; fi
+        if [ ! -z "$MAIL_USERNAME" ]; then sed -i "s|^MAIL_USERNAME=.*|MAIL_USERNAME=$MAIL_USERNAME|" .env; fi
+        if [ ! -z "$MAIL_PASSWORD" ]; then sed -i "s|^MAIL_PASSWORD=.*|MAIL_PASSWORD=$MAIL_PASSWORD|" .env; fi
+        if [ ! -z "$MAIL_TIMEOUT" ]; then sed -i "s|^MAIL_TIMEOUT=.*|MAIL_TIMEOUT=$MAIL_TIMEOUT|" .env; fi
+    fi
 fi
 
-if [ ! -z "$MAIL_HOST" ]; then sed -i "s|^MAIL_HOST=.*|MAIL_HOST=$MAIL_HOST|" .env; fi
-if [ ! -z "$MAIL_PORT" ]; then sed -i "s|^MAIL_PORT=.*|MAIL_PORT=$MAIL_PORT|" .env; fi
-if [ ! -z "$MAIL_USERNAME" ]; then sed -i "s|^MAIL_USERNAME=.*|MAIL_USERNAME=$MAIL_USERNAME|" .env; fi
-if [ ! -z "$MAIL_PASSWORD" ]; then sed -i "s|^MAIL_PASSWORD=.*|MAIL_PASSWORD=$MAIL_PASSWORD|" .env; fi
 if [ ! -z "$MAIL_FROM_ADDRESS" ]; then sed -i "s|^MAIL_FROM_ADDRESS=.*|MAIL_FROM_ADDRESS=$MAIL_FROM_ADDRESS|" .env; fi
 if [ ! -z "$MAIL_FROM_NAME" ]; then sed -i "s|^MAIL_FROM_NAME=.*|MAIL_FROM_NAME=\"$MAIL_FROM_NAME\"|" .env; fi
-if [ ! -z "$MAIL_TIMEOUT" ]; then sed -i "s|^MAIL_TIMEOUT=.*|MAIL_TIMEOUT=$MAIL_TIMEOUT|" .env; fi
 echo "   ✅ Email service configured"
 
 # Step 4: Handle Railway MySQL variables
