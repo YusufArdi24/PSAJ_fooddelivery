@@ -16,7 +16,7 @@
         ExpiresByType image/* "access plus 1 year"
     </IfModule>
 
-    # CORS Headers + Security headers for all requests
+    # CORS Headers for all requests
     <IfModule mod_headers.c>
         # Allow all origins
         Header always set Access-Control-Allow-Origin "*"
@@ -24,9 +24,6 @@
         Header always set Access-Control-Allow-Headers "Content-Type, Authorization, X-Requested-With, X-XSRF-TOKEN"
         Header always set Access-Control-Expose-Headers "Content-Length, Content-Type"
         Header always set Access-Control-Max-Age "86400"
-        
-        # COOP header for OAuth popups
-        Header always set Cross-Origin-Opener-Policy "same-origin-allow-popups"
         
         # Cache control for static files
         <FilesMatch "\.(css|js|jpg|jpeg|png|gif|ico|svg|woff|woff2|ttf|eot)$">

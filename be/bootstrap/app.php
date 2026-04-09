@@ -18,10 +18,11 @@ return Application::configure(basePath: dirname(__DIR__))
             'storage.cors' => \App\Http\Middleware\StorageCorsMiddleware::class,
         ]);
         
-        // Add COOP header to ALL responses (OAuth popup fix)
-        $middleware->append(\App\Http\Middleware\AddCoopHeader::class);
+        // CRITICAL: Prepend COOP middleware so it executes FIRST and sets header early
+        // This ensures COOP header is added before ANY other middleware
+        $middleware->prepend(\App\Http\Middleware\AddCoopHeader::class);
         
-        // Apply API CORS middleware to all API routes
+        // Apply API CORS middleware to API routes
         $middleware->append(\App\Http\Middleware\ApiCorsMiddleware::class);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
