@@ -53,8 +53,18 @@ sed -i "s|^APP_KEY=.*|APP_KEY=$APP_KEY|" .env
 # CRITICAL: Ensure DB_CONNECTION is ALWAYS mysql (not sqlite!)
 sed -i "s|^DB_CONNECTION=.*|DB_CONNECTION=mysql|" .env
 
-# CRITICAL: Ensure MAIL_SCHEME is correct for SMTP port 587 (STARTTLS)
-sed -i "s|^MAIL_SCHEME=.*|MAIL_SCHEME=smtp|" .env
+# Step 3.5: Handle Railway Email/MAIL variables
+echo "3.5️⃣  Configuring email service..."
+if [ ! -z "$MAIL_MAILER" ]; then sed -i "s|^MAIL_MAILER=.*|MAIL_MAILER=$MAIL_MAILER|" .env; fi
+if [ ! -z "$MAIL_SCHEME" ]; then sed -i "s|^MAIL_SCHEME=.*|MAIL_SCHEME=$MAIL_SCHEME|" .env; fi
+if [ ! -z "$MAIL_HOST" ]; then sed -i "s|^MAIL_HOST=.*|MAIL_HOST=$MAIL_HOST|" .env; fi
+if [ ! -z "$MAIL_PORT" ]; then sed -i "s|^MAIL_PORT=.*|MAIL_PORT=$MAIL_PORT|" .env; fi
+if [ ! -z "$MAIL_USERNAME" ]; then sed -i "s|^MAIL_USERNAME=.*|MAIL_USERNAME=$MAIL_USERNAME|" .env; fi
+if [ ! -z "$MAIL_PASSWORD" ]; then sed -i "s|^MAIL_PASSWORD=.*|MAIL_PASSWORD=$MAIL_PASSWORD|" .env; fi
+if [ ! -z "$MAIL_FROM_ADDRESS" ]; then sed -i "s|^MAIL_FROM_ADDRESS=.*|MAIL_FROM_ADDRESS=$MAIL_FROM_ADDRESS|" .env; fi
+if [ ! -z "$MAIL_FROM_NAME" ]; then sed -i "s|^MAIL_FROM_NAME=.*|MAIL_FROM_NAME=$MAIL_FROM_NAME|" .env; fi
+if [ ! -z "$MAIL_TIMEOUT" ]; then sed -i "s|^MAIL_TIMEOUT=.*|MAIL_TIMEOUT=$MAIL_TIMEOUT|" .env; fi
+echo "   ✅ Email service configured"
 
 # Step 4: Handle Railway MySQL variables
 echo "4️⃣  Configuring database..."
@@ -81,13 +91,23 @@ FINAL_DB_HOST=$(grep "^DB_HOST=" .env | cut -d= -f2-)
 FINAL_DB_DATABASE=$(grep "^DB_DATABASE=" .env | cut -d= -f2-)
 FINAL_DB_USERNAME=$(grep "^DB_USERNAME=" .env | cut -d= -f2-)
 FINAL_MAIL_SCHEME=$(grep "^MAIL_SCHEME=" .env | cut -d= -f2-)
+FINAL_MAIL_MAILER=$(grep "^MAIL_MAILER=" .env | cut -d= -f2-)
+FINAL_MAIL_HOST=$(grep "^MAIL_HOST=" .env | cut -d= -f2-)
+FINAL_MAIL_PORT=$(grep "^MAIL_PORT=" .env | cut -d= -f2-)
+FINAL_MAIL_USERNAME=$(grep "^MAIL_USERNAME=" .env | cut -d= -f2-)
+FINAL_MAIL_FROM=$(grep "^MAIL_FROM_ADDRESS=" .env | cut -d= -f2-)
 
 echo "   APP_URL: $FINAL_URL"
 echo "   DB_CONNECTION: $FINAL_DB_CONNECTION"
 echo "   DB_HOST: $FINAL_DB_HOST"
 echo "   DB_DATABASE: $FINAL_DB_DATABASE"
 echo "   DB_USERNAME: $FINAL_DB_USERNAME"
+echo "   MAIL_MAILER: $FINAL_MAIL_MAILER"
 echo "   MAIL_SCHEME: $FINAL_MAIL_SCHEME"
+echo "   MAIL_HOST: $FINAL_MAIL_HOST"
+echo "   MAIL_PORT: $FINAL_MAIL_PORT"
+echo "   MAIL_USERNAME: $FINAL_MAIL_USERNAME"
+echo "   MAIL_FROM_ADDRESS: $FINAL_MAIL_FROM"
 
 if [ -z "$FINAL_URL" ] || [ "$FINAL_URL" = "http://localhost" ]; then
     echo "   ⚠️ Invalid APP_URL in .env, fixing..."
