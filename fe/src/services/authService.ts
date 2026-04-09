@@ -367,7 +367,6 @@ export const googleAuthCustomer = async (accessToken: string) => {
     const response = await fetch(`${API_BASE_URL}${API_ENDPOINTS.AUTH.CUSTOMER_GOOGLE_AUTH}`, {
       method: HTTP_METHODS.POST,
       headers: getDefaultHeaders(),
-      credentials: 'include',
       body: JSON.stringify({ access_token: accessToken }),
     });
     const result = await handleApiResponse(response);
