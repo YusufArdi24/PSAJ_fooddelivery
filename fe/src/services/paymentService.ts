@@ -124,6 +124,7 @@ export const createSnapTransaction = async (
 /**
  * Initialize Midtrans Snap.js payment gateway
  * This function loads the Snap.js script if not already loaded
+ * Handles origin mismatches and loading errors gracefully
  */
 export const initializeMidtransSnap = async (
   snapUrl: string
@@ -131,54 +132,94 @@ export const initializeMidtransSnap = async (
   return new Promise((resolve, reject) => {
     // Check if Snap.js already loaded
     if ((window as any).snap) {
+      console.log("✓ Snap.js already initialized");
       resolve();
       return;
     }
+
+    console.log("Loading Snap.js from:", snapUrl);
 
     // Create script element
     const script = document.createElement("script");
     script.src = snapUrl;
     script.async = true;
+    script.type = "text/javascript";
+
+    // Timeout handler (10 seconds)
+    const timeout = setTimeout(() => {
+      console.error("❌ Snap.js loading timeout");
+      document.head.removeChild(script);
+      reject(new Error("Midtrans Snap.js loading timeout - please check your internet connection"));
+    }, 10000);
+
     script.onload = () => {
-      // Snap.js is now ready to use
+      clearTimeout(timeout);
+      
+      // Verify snap object is available
+      if (!((window as any).snap)) {
+        console.error("❌ Snap.js loaded but snap object not found");
+        reject(new Error("Midtrans Snap.js loaded but snap object is undefined. This usually means: 1) Domain not whitelisted in Midtrans dashboard, or 2) snap.js version mismatch"));
+        return;
+      }
+
+      console.log("✓ Snap.js loaded and initialized successfully");
       resolve();
     };
-    script.onerror = () => {
-      reject(new Error("Failed to load Snap.js"));
+
+    script.onerror = (event) => {
+      clearTimeout(timeout);
+      console.error("❌ Failed to load Snap.js:", event);
+      reject(new Error(`Failed to load Midtrans Snap.js. Please check: 1) Internet connection, 2) Snap URL is correct, 3) Browser console for CORS errors`));
     };
 
-    document.body.appendChild(script);
+    // Handle script loading errors
+    script.onabort = () => {
+      clearTimeout(timeout);
+      console.error("❌ Snap.js loading aborted");
+      reject(new Error("Snap.js loading was aborted"));
+    };
+
+    document.head.appendChild(script);
   });
 };
 
 /**
  * Open Midtrans payment modal/redirect
+ * Handles payment flow with detailed error reporting
  */
 export const openMidtransPayment = async (snapToken: string): Promise<void> => {
   return new Promise((resolve, reject) => {
     if (!(window as any).snap) {
-      reject(new Error("Midtrans Snap not initialized"));
+      console.error("❌ Snap object not initialized");
+      reject(new Error("Midtrans Snap not initialized. This usually means: 1) snap.js failed to load, 2) Domain not whitelisted in Midtrans dashboard"));
       return;
     }
 
-    (window as any).snap.pay(snapToken, {
-      onSuccess: (result: any) => {
-        console.log("Payment success:", result);
-        resolve();
-      },
-      onPending: (result: any) => {
-        console.log("Payment pending:", result);
-        resolve();
-      },
-      onError: (result: any) => {
-        console.error("Payment error:", result);
-        reject(result);
-      },
-      onClose: () => {
-        console.log("Payment modal closed");
-        resolve();
-      },
-    });
+    console.log("Opening Midtrans payment modal...");
+
+    try {
+      (window as any).snap.pay(snapToken, {
+        onSuccess: (result: any) => {
+          console.log("✓ Payment success:", result);
+          resolve();
+        },
+        onPending: (result: any) => {
+          console.log("⏳ Payment pending:", result);
+          resolve();
+        },
+        onError: (result: any) => {
+          console.error("❌ Payment error:", result);
+          reject(new Error(`Payment error: ${result?.error_msg || JSON.stringify(result)}`));
+        },
+        onClose: () => {
+          console.log("Payment modal closed by user");
+          resolve();
+        },
+      });
+    } catch (error: any) {
+      console.error("❌ Error calling snap.pay():", error);
+      reject(new Error(`Failed to open payment modal: ${error?.message || String(error)}`));
+    }
   });
 };
 

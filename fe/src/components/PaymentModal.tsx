@@ -42,13 +42,29 @@ export default function PaymentModal({
   // Initialize Midtrans Snap on component mount
   useEffect(() => {
     if (isOpen && clientKey && snapUrl && !snapInitialized) {
+      console.log("Initializing Snap with URL:", snapUrl);
       initializeMidtransSnap(snapUrl)
         .then(() => {
+          console.log("Snap initialized successfully");
           setSnapInitialized(true);
         })
         .catch((err) => {
           console.error("Failed to initialize Snap:", err);
-          setError("Gagal memuat payment gateway. Silakan refresh halaman.");
+          const errorMsg = err.message || "Gagal memuat payment gateway";
+          
+          // Provide helpful hint for origin mismatch
+          if (errorMsg.includes("origin") || errorMsg.includes("whitelisted") || errorMsg.includes("snap object")) {
+            setError(
+              errorMsg + 
+              "\n\nTroubleshooting: " +
+              "1) Pastikan domain Anda ditambahkan ke Midtrans dashboard → Settings → Configuration → Allowed Origins\n" +
+              "2) Tunggu 5-10 menit untuk propagasi\n" +
+              "3) Refresh browser (Ctrl+Shift+R)\n" +
+              "4) Cek browser console (F12) untuk error details"
+            );
+          } else {
+            setError(errorMsg);
+          }
         });
     }
   }, [isOpen, clientKey, snapUrl, snapInitialized]);
