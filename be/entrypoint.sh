@@ -212,37 +212,24 @@ fi
 echo "8️⃣  Publishing package assets..."
 mkdir -p public/vendor public/livewire
 
-# Step 8a: Use custom command to extract Livewire JS to public/vendor/livewire
-echo "   8a️⃣  Extracting Livewire JS via custom command..."
-php artisan livewire:extract-js 2>&1 | head -5
+# Step 8a: Publish Livewire and Filament
+echo "   Publishing Livewire and Filament..."
+php artisan livewire:publish --assets --force 2>&1 | tail -2 || true
+php artisan filament:publish --force 2>&1 | tail -2 || true
 
-# Step 8b: Fallback - try artisan livewire:publish (extracts to public/vendor/livewire)
-if [ ! -f "public/vendor/livewire/livewire.js" ]; then
-    echo "   8b️⃣  Custom extraction didn't work, trying artisan publish..."
-    php artisan livewire:publish --assets --force 2>&1 | head -3
-    php artisan filament:publish --force 2>&1 | head -3
-fi
-
-# Step 8c: Create symlink from public/livewire to public/vendor/livewire if needed
-if [ ! -L "public/livewire" ] && [ -d "public/vendor/livewire" ]; then
-    echo "   8c️⃣  Creating symlink for compatibility..."
-    ln -sf vendor/livewire public/livewire 2>/dev/null || true
-fi
-
-# Step 8d: Verify and report
-echo "   8d️⃣  Verification..."
+# Step 8b: Verify Livewire JS exists
 if [ -f "public/vendor/livewire/livewire.js" ]; then
+    echo "   ✅ Livewire JS published to public/vendor/livewire/"
     FILE_SIZE=$(ls -lh public/vendor/livewire/livewire.js | awk '{print $5}')
-    echo "   ✅ SUCCESS: Livewire JS at public/vendor/livewire! Size: $FILE_SIZE"
+    echo "   File size: $FILE_SIZE"
 elif [ -f "public/livewire/livewire.js" ]; then
-    FILE_SIZE=$(ls -lh public/livewire/livewire.js | awk '{print $5}')
-    echo "   ✅ SUCCESS: Livewire JS at public/livewire! Size: $FILE_SIZE"  
+    echo "   ✅ Livewire JS found at public/livewire/"
 else
-    echo "   ⚠️  WARNING: Livewire JS not in expected location - middleware will serve from vendor dir"
+    echo "   ⚠️  Livewire JS will be served from middleware (vendor directory)"
 fi
 
 chmod -R 755 public/vendor public/livewire 2>/dev/null || true
-echo "   ✅ Assets configuration complete"
+echo "   ✅ Assets ready"
 
 # Step 9: Run migrations (only if database configured)
 echo "9️⃣  Database migrations..."
