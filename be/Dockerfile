@@ -30,8 +30,8 @@ COPY . .
 # Create necessary directories
 RUN mkdir -p /var/log/nginx /var/cache/nginx
 
-# Set default APP_URL for build time (required by Laravel)
-ENV APP_URL=http://localhost:8000
+# Set temporary APP_URL for build time only (will be overridden at runtime by railway.toml)
+ENV APP_URL=http://localhost
 
 # Install dependencies with --no-scripts to avoid artisan commands that need APP_URL
 RUN composer install --no-dev --no-scripts --optimize-autoloader
