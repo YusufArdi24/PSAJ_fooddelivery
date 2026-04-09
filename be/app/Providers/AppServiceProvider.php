@@ -11,7 +11,6 @@ use App\Observers\PromoObserver;
 use App\Observers\OrderObserver;
 use App\Notifications\CustomerVerifyEmail;
 use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Facades\Log;
 use App\Mail\Transports\ResendTransport;
 
 class AppServiceProvider extends ServiceProvider
@@ -29,13 +28,11 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        // Register Livewire routes if Livewire is available
+        // Register Livewire AJAX routes (for component updates)
         if (class_exists(\Livewire\Livewire::class)) {
-            try {
-                \Livewire\Livewire::routes();
-            } catch (\Throwable $e) {
-                Log::warning('Livewire routing failed: ' . $e->getMessage());
-            }
+            // Don't call Livewire::routes() here as it conflicts with our custom route
+            // The custom /livewire/livewire.js route in web.php handles the script
+            // Livewire update endpoint will be handled by Filament's route registration
         }
 
         // Register Resend mail transport

@@ -210,48 +210,39 @@ fi
 echo "8️⃣  Publishing package assets..."
 mkdir -p public/vendor public/livewire
 
-# Step 8a: Publish Livewire and Filament via artisan
-echo "   8a️⃣  Publishing via artisan commands..."
-php artisan livewire:publish --assets --force 2>&1 | head -5
-php artisan filament:publish --force 2>&1 | head -5
+# Step 8a: Use custom command to extract Livewire JS
+echo "   8a️⃣  Extracting Livewire JS via custom command..."
+php artisan livewire:extract-js 2>&1 | head -5
 
-# Step 8b: AGGRESSIVE Livewire extraction from vendor
-echo "   8b️⃣  Extracting Livewire JS from vendor..."
-LIVEWIRE_EXTRACTED=0
+# Step 8b: Fallback - try artisan livewire:publish
+if [ ! -f "public/livewire/livewire.js" ]; then
+    echo "   8b️⃣  Custom extraction didn't work, trying artisan commands..."
+    php artisan livewire:publish --assets --force 2>&1 | head -3
+    php artisan filament:publish --force 2>&1 | head -3
+fi
 
-# Try multiple possible Livewire locations
-if [ -f "vendor/livewire/livewire/dist/livewire.js" ]; then
-    echo "   ✓ Found: vendor/livewire/livewire/dist/livewire.js"
-    cp -f vendor/livewire/livewire/dist/livewire.js public/livewire/livewire.js
-    LIVEWIRE_EXTRACTED=1
-elif [ -f "vendor/livewire/livewire/dist/livewire.umd.js" ]; then
-    echo "   ✓ Found: vendor/livewire/livewire/dist/livewire.umd.js"
-    cp -f vendor/livewire/livewire/dist/livewire.umd.js public/livewire/livewire.js
-    LIVEWIRE_EXTRACTED=1
-elif [ -d "vendor/livewire/livewire/dist" ]; then
-    echo "   ✓ Dist directory found, copying all .js files..."
-    cp -f vendor/livewire/livewire/dist/*.js public/livewire/ 2>/dev/null || true
-    if [ -f "public/livewire/livewire.js" ] || [ -f "public/livewire/livewire.umd.js" ]; then
-        LIVEWIRE_EXTRACTED=1
+# Step 8c: Final fallback - manual extraction from vendor
+if [ ! -f "public/livewire/livewire.js" ]; then
+    echo "   8c️⃣  Manual extraction from vendor..."
+    
+    if [ -f "vendor/livewire/livewire/dist/livewire.js" ]; then
+        cp -f vendor/livewire/livewire/dist/livewire.js public/livewire/livewire.js
+        echo "   ✓ Copied from dist/livewire.js"
+    elif [ -f "vendor/livewire/livewire/dist/livewire.umd.js" ]; then
+        cp -f vendor/livewire/livewire/dist/livewire.umd.js public/livewire/livewire.js
+        echo "   ✓ Copied from dist/livewire.umd.js"
     fi
 fi
 
-# Step 8c: Final verification
-echo "   8c️⃣  Verifying extraction..."
+# Step 8d: Verify and report
+echo "   8d️⃣  Verification..."
 if [ -f "public/livewire/livewire.js" ]; then
     FILE_SIZE=$(ls -lh public/livewire/livewire.js | awk '{print $5}')
-    echo "   ✅ Livewire JS ready! Size: $FILE_SIZE"
-    LIVEWIRE_EXTRACTED=1
-elif [ -f "public/livewire/livewire.umd.js" ]; then
-    FILE_SIZE=$(ls -lh public/livewire/livewire.umd.js | awk '{print $5}')
-    echo "   ✅ Livewire UMD JS ready! Size: $FILE_SIZE"
-    cp -f public/livewire/livewire.umd.js public/livewire/livewire.js
-    LIVEWIRE_EXTRACTED=1
+    echo "   ✅ SUCCESS: Livewire JS ready! Size: $FILE_SIZE"
 else
-    echo "   ⚠️  Livewire JS not found - will serve via Livewire::routes()"
+    echo "   ⚠️  WARNING: Livewire JS not found - will attempt dynamic serving"
 fi
 
-# Set permissions
 chmod -R 755 public/vendor public/livewire 2>/dev/null || true
 echo "   ✅ Assets configuration complete"
 
