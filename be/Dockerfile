@@ -50,6 +50,9 @@ RUN composer install --no-dev --no-scripts --optimize-autoloader
 # Run scripts manually in safe way (package:discover might fail but we can continue)
 RUN php artisan package:discover --ansi || true
 
+# DO NOT cache config during build - let runtime config:clear handle it
+# RUN php artisan config:cache || true
+
 # Expose port
 EXPOSE 8000
 

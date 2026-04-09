@@ -1,137 +1,155 @@
 #!/bin/bash
 
-# Exit on error for critical steps, but continue on non-critical
-trap 'echo "Error occurred" >&2' ERR
+# Do NOT exit on error - we need to see all output
+set +e
 
 echo "========================================="
-echo "Starting Laravel Application Initialization"
+echo "LARAVEL ENTRYPOINT SCRIPT STARTING"
 echo "========================================="
+echo ""
+echo "Current Working Directory: $(pwd)"
+echo "User: $(whoami)"
+echo "Time: $(date)"
+echo ""
 
-# Ensure .env exists
+# Check if .env.example exists
+if [ ! -f /app/.env.example ]; then
+    echo "❌ CRITICAL: .env.example NOT FOUND!"
+    ls -la /app/ | head -20
+    exit 1
+fi
+
+echo "✓ .env.example found"
+
+# Create or verify .env
 if [ ! -f /app/.env ]; then
-    echo "❌ .env file not found, creating from .env.example..."
-    if [ ! -f /app/.env.example ]; then
-        echo "ERROR: .env.example also not found!"
-        exit 1
-    fi
+    echo "❌ .env does not exist, copying from .env.example..."
     cp /app/.env.example /app/.env
-    echo "✓ .env created successfully"
+    echo "✓ .env created"
 else
-    echo "✓ .env file exists"
+    echo "✓ .env already exists"
 fi
 
 echo ""
-echo "Setting up environment variables..."
+echo "========================================="
+echo "ENVIRONMENT VARIABLES FROM RAILWAY:"
+echo "========================================="
+echo "APP_URL env var: '$APP_URL'"
+echo "MYSQLHOST: '$MYSQLHOST'"
+echo "MYSQLDATABASE: '$MYSQLDATABASE'"
+echo ""
 
-# Set critical environment variables with proper defaults
-export APP_KEY="${APP_KEY:-base64:XbAzi6vg8BmX26gv/IrDr059QtHqeyoaOy4DoTIlUqU=}"
-export APP_ENV="${APP_ENV:-production}"
-export APP_DEBUG="${APP_DEBUG:-false}"
+# Always set these - especially APP_URL which is causing issues
+export APP_KEY="base64:XbAzi6vg8BmX26gv/IrDr059QtHqeyoaOy4DoTIlUqU="
+export APP_ENV="production"
+export APP_DEBUG="false"
 
-# APP_URL MUST have a valid format - use 127.0.0.1 if empty
-if [ -z "$APP_URL" ] || [ "$APP_URL" == "http://localhost" ]; then
+# CRITICAL: APP_URL must be set and valid
+if [ -z "$APP_URL" ]; then
     export APP_URL="http://127.0.0.1:8000"
-    echo "⚠️  APP_URL was empty or invalid, set to: $APP_URL"
-else
-    echo "✓ APP_URL is set to: $APP_URL"
-fi
-
-# Ensure APP_URL has scheme and port
-if [[ ! "$APP_URL" =~ ^https?:// ]]; then
+    echo "⚠️  APP_URL was empty, setting to: $APP_URL"
+elif [[ "$APP_URL" != http* ]]; then
+    # Add http:// if missing scheme
     export APP_URL="http://$APP_URL"
     echo "⚠️  APP_URL missing scheme, updated to: $APP_URL"
 fi
 
-# Update .env file with CRITICAL variables
+echo "✓ APP_URL will be: $APP_URL"
 echo ""
-echo "Updating .env file with critical variables..."
-sed -i "s|^APP_KEY=.*|APP_KEY=$APP_KEY|g" /app/.env
-sed -i "s|^APP_URL=.*|APP_URL=$APP_URL|g" /app/.env
-sed -i "s|^APP_ENV=.*|APP_ENV=$APP_ENV|g" /app/.env
-sed -i "s|^APP_DEBUG=.*|APP_DEBUG=$APP_DEBUG|g" /app/.env
 
-# Database configuration - Handle both Laravel and Railway format
+# Show current .env content (first 20 lines)
+echo "========================================="
+echo "CURRENT .env CONTENT (first 20 lines):"
+echo "========================================="
+head -20 /app/.env
 echo ""
-echo "Checking database configuration..."
 
-# Railway uses: MYSQLHOST, MYSQLDATABASE, MYSQLUSER, MYSQLPASSWORD
-# Laravel uses: DB_HOST, DB_DATABASE, DB_USERNAME, DB_PASSWORD
+echo "========================================="
+echo "UPDATING .env FILE WITH VARIABLES"
+echo "========================================="
 
-# Convert Railway MySQL variables to Laravel format if they exist
+# Use a more robust sed replacement
+sed -i.bak "s|^APP_KEY=.*|APP_KEY=$APP_KEY|" /app/.env
+sed -i.bak "s|^APP_URL=.*|APP_URL=$APP_URL|" /app/.env
+sed -i.bak "s|^APP_ENV=.*|APP_ENV=$APP_ENV|" /app/.env
+sed -i.bak "s|^APP_DEBUG=.*|APP_DEBUG=$APP_DEBUG|" /app/.env
+
+# Handle database vars - Railway format
 if [ ! -z "$MYSQLHOST" ]; then
-    DB_HOST="$MYSQLHOST"
-    echo "✓ Found MYSQLHOST, using as DB_HOST"
-fi
-
-if [ ! -z "$MYSQLDATABASE" ]; then
-    DB_DATABASE="$MYSQLDATABASE"
-    echo "✓ Found MYSQLDATABASE, using as DB_DATABASE"
-fi
-
-if [ ! -z "$MYSQLUSER" ]; then
-    DB_USERNAME="$MYSQLUSER"
-    echo "✓ Found MYSQLUSER, using as DB_USERNAME"
-fi
-
-if [ ! -z "$MYSQLPASSWORD" ]; then
-    DB_PASSWORD="$MYSQLPASSWORD"
-    echo "✓ Found MYSQLPASSWORD, using as DB_PASSWORD"
-fi
-
-# Now set the .env file with the proper variables
-if [ ! -z "$DB_HOST" ]; then
-    echo "Configuring database: $DB_HOST"
-    sed -i "s|^DB_CONNECTION=.*|DB_CONNECTION=mysql|g" /app/.env
-    sed -i "s|^DB_HOST=.*|DB_HOST=$DB_HOST|g" /app/.env
-    sed -i "s|^DB_PORT=.*|DB_PORT=${DB_PORT:-3306}|g" /app/.env
-    sed -i "s|^DB_DATABASE=.*|DB_DATABASE=${DB_DATABASE:-railway}|g" /app/.env
-    sed -i "s|^DB_USERNAME=.*|DB_USERNAME=${DB_USERNAME:-root}|g" /app/.env
-    sed -i "s|^DB_PASSWORD=.*|DB_PASSWORD=$DB_PASSWORD|g" /app/.env
+    echo "Setting database from Railway variables..."
+    sed -i.bak "s|^DB_HOST=.*|DB_HOST=$MYSQLHOST|" /app/.env
+    sed -i.bak "s|^DB_DATABASE=.*|DB_DATABASE=$MYSQLDATABASE|" /app/.env
+    sed -i.bak "s|^DB_USERNAME=.*|DB_USERNAME=$MYSQLUSER|" /app/.env
+    sed -i.bak "s|^DB_PASSWORD=.*|DB_PASSWORD=$MYSQLPASSWORD|" /app/.env
     echo "✓ Database configured"
+fi
+
+echo ""
+echo "========================================="
+echo "AFTER UPDATE - CRITICAL VALUES:"
+echo "========================================="
+echo "APP_KEY: $(grep '^APP_KEY=' /app/.env)"
+echo "APP_URL: $(grep '^APP_URL=' /app/.env)"
+echo "APP_ENV: $(grep '^APP_ENV=' /app/.env)"
+echo "APP_DEBUG: $(grep '^APP_DEBUG=' /app/.env)"
+if [ ! -z "$MYSQLHOST" ]; then
+    echo "DB_HOST: $(grep '^DB_HOST=' /app/.env)"
+    echo "DB_DATABASE: $(grep '^DB_DATABASE=' /app/.env)"
+fi
+echo ""
+
+# Verify APP_URL is actually valid
+FINAL_APP_URL=$(grep '^APP_URL=' /app/.env | cut -d= -f2-)
+echo "✓ Final APP_URL in .env: $FINAL_APP_URL"
+
+if [[ ! "$FINAL_APP_URL" =~ ^http ]]; then
+    echo "❌ ERROR: APP_URL still invalid: $FINAL_APP_URL"
+    echo "Attempting aggressive fix..."
+    echo "APP_URL=http://127.0.0.1:8000" >> /app/.env
+fi
+
+echo ""
+echo "========================================="
+echo "LARAVEL CONFIGURATION"
+echo "========================================="
+
+# Clear any cached config
+echo "Clearing config cache..."
+php /app/artisan config:clear --no-interaction 2>&1 | head -5 || echo "Config clear had issues"
+
+# Remove bootstrap cache files
+echo "Removing bootstrap cache..."
+rm -f /app/bootstrap/cache/config.php 2>/dev/null || true
+rm -f /app/bootstrap/cache/packages.php 2>/dev/null || true
+rm -f /app/bootstrap/cache/services.php 2>/dev/null || true
+
+# Try to optimize config
+echo "Optimizing autoloader..."
+cd /app && composer dump-autoload --no-interaction 2>&1 | tail -3 || echo "Composer dump had issues"
+
+echo ""
+echo "========================================="
+echo "DATABASE SETUP"
+echo "========================================="
+
+if [ ! -z "$MYSQLHOST" ]; then
+    echo "Attempting database migrations..."
+    php /app/artisan migrate --force --no-interaction 2>&1 | tail -5 || echo "⚠️  Migrations had issues"
 else
-    echo "⚠️  No database host configured"
+    echo "⚠️  No database configured, skipping migrations"
 fi
 
 echo ""
 echo "========================================="
-echo "Environment Summary:"
+echo "STARTING LARAVEL"
 echo "========================================="
-echo "APP_NAME: $(grep '^APP_NAME=' /app/.env | cut -d= -f2-)"
-echo "APP_URL: $(grep '^APP_URL=' /app/.env | cut -d= -f2-)"
-echo "APP_ENV: $(grep '^APP_ENV=' /app/.env | cut -d= -f2-)"
-echo "APP_DEBUG: $(grep '^APP_DEBUG=' /app/.env | cut -d= -f2-)"
-if [ ! -z "$DB_HOST" ]; then
-    echo "DB_HOST: $(grep '^DB_HOST=' /app/.env | cut -d= -f2-)"
-    echo "DB_DATABASE: $(grep '^DB_DATABASE=' /app/.env | cut -d= -f2-)"
-fi
-echo "========================================="
-
-# Clear caches before running migrations
-echo ""
-echo "Clearing application caches..."
-php /app/artisan config:cache --no-interaction 2>/dev/null || echo "⚠️  config:cache had issues, continuing..."
-php /app/artisan cache:clear --no-interaction 2>/dev/null || echo "⚠️  cache:clear had issues, continuing..."
-
-# Run database migrations only if database is configured
-echo ""
-if [ ! -z "$DB_HOST" ]; then
-    if [ "$SKIP_MIGRATIONS" != "true" ]; then
-        echo "Running database migrations..."
-        php /app/artisan migrate --force --no-interaction || echo "⚠️  Migrations might have had issues, continuing..."
-    else
-        echo "Skipping migrations (SKIP_MIGRATIONS=true)"
-    fi
-else
-    echo "⚠️  Skipping migrations - no database configured"
-fi
-
-# Start PHP development server
-echo ""
-echo "========================================="
-echo "✓ All initialization complete!"
-echo "Starting Laravel application on 0.0.0.0:8000..."
+echo "Time: $(date)"
 echo "App URL: $(grep '^APP_URL=' /app/.env | cut -d= -f2-)"
+echo ""
+echo "Executing: php /app/artisan serve --host=0.0.0.0 --port=8000"
 echo "========================================="
 echo ""
 
-exec php /app/artisan serve --host=0.0.0.0 --port=8000
+# Start the app
+cd /app
+exec php artisan serve --host=0.0.0.0 --port=8000
