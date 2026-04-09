@@ -53,6 +53,9 @@ sed -i "s|^APP_KEY=.*|APP_KEY=$APP_KEY|" .env
 # CRITICAL: Ensure DB_CONNECTION is ALWAYS mysql (not sqlite!)
 sed -i "s|^DB_CONNECTION=.*|DB_CONNECTION=mysql|" .env
 
+# CRITICAL: Ensure MAIL_SCHEME is correct for SMTP port 587 (STARTTLS)
+sed -i "s|^MAIL_SCHEME=.*|MAIL_SCHEME=smtp|" .env
+
 # Step 4: Handle Railway MySQL variables
 echo "4️⃣  Configuring database..."
 echo "   Environment Variables:"
@@ -77,12 +80,14 @@ FINAL_DB_CONNECTION=$(grep "^DB_CONNECTION=" .env | cut -d= -f2-)
 FINAL_DB_HOST=$(grep "^DB_HOST=" .env | cut -d= -f2-)
 FINAL_DB_DATABASE=$(grep "^DB_DATABASE=" .env | cut -d= -f2-)
 FINAL_DB_USERNAME=$(grep "^DB_USERNAME=" .env | cut -d= -f2-)
+FINAL_MAIL_SCHEME=$(grep "^MAIL_SCHEME=" .env | cut -d= -f2-)
 
 echo "   APP_URL: $FINAL_URL"
 echo "   DB_CONNECTION: $FINAL_DB_CONNECTION"
 echo "   DB_HOST: $FINAL_DB_HOST"
 echo "   DB_DATABASE: $FINAL_DB_DATABASE"
 echo "   DB_USERNAME: $FINAL_DB_USERNAME"
+echo "   MAIL_SCHEME: $FINAL_MAIL_SCHEME"
 
 if [ -z "$FINAL_URL" ] || [ "$FINAL_URL" = "http://localhost" ]; then
     echo "   ⚠️ Invalid APP_URL in .env, fixing..."
