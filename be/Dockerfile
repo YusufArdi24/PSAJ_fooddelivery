@@ -49,9 +49,5 @@ RUN composer install --no-dev --no-scripts --optimize-autoloader
 # Expose port
 EXPOSE 8000
 
-# Set entrypoint to run initialization script
-ENTRYPOINT ["/bin/bash", "/app/entrypoint.sh"]
-ENTRYPOINT ["/bin/bash", "/app/entrypoint.sh"]
-
-# Use bash + entrypoint script via CMD (more reliable than ENTRYPOINT)
+# Use bash to run entrypoint script
 CMD ["/bin/bash", "/app/entrypoint.sh"]

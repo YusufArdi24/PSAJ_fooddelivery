@@ -113,15 +113,21 @@ php artisan cache:clear --no-interaction 2>/dev/null || echo "   (cache:clear sk
 php artisan view:clear --no-interaction 2>/dev/null || echo "   (view:clear skipped)"
 echo "   Cache cleared successfully"
 
-# Step 8: Run migrations (only if database configured)
-echo "7️⃣  Database migrations..."
+# Step 8: Publish Filament Assets
+echo "8️⃣  Publishing Filament assets..."
+php artisan filament:publish --no-interaction 2>/dev/null || echo "   (Filament publish skipped)"
+mkdir -p public/vendor/filament
+echo "   ✅ Filament assets ready"
+
+# Step 9: Run migrations (only if database configured)
+echo "9️⃣  Database migrations..."
 if [ ! -z "$MYSQLHOST" ]; then
     php artisan migrate --force --no-interaction 2>&1 | tail -2 || echo "   (migrations skipped)"
 else
     echo "   Skipped (no database configured)"
 fi
 
-# Step 9: START Laravel
+# Step 10: START Laravel
 echo ""
 echo "========================================="
 echo "   ✅ Starting Laravel Server"

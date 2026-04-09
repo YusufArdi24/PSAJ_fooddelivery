@@ -48,14 +48,12 @@ export default function SignIn() {
     onSuccess: async (tokenResponse) => {
       setIsGoogleLoading(true);
       try {
-        // For auth-code flow, tokenResponse contains code, not access_token
-        // We need to exchange it for tokens on backend
+        // Implicit flow returns access_token directly
         const result = await googleAuthCustomer(tokenResponse.access_token);
 
         if (!result.success) throw new Error(result.message || 'Login Google gagal');
 
         if (result.is_login) {
-          // Existing verified customer — credentials already stored by googleAuthCustomer
           await refreshUser();
           const customer = result.data?.customer;
           toast({ title: 'Login Google Berhasil', description: 'Selamat datang!' });
@@ -67,10 +65,8 @@ export default function SignIn() {
             navigate('/dashboard');
           }
         } else {
-          // New / unverified customer → pending registration flow
           localStorage.setItem('wdn_pt', result.pending_token);
           localStorage.setItem('wdn_email', result.email ?? '');
-
           toast({ title: 'Verifikasi Email', description: 'Masukkan kode OTP yang kami kirimkan.' });
           navigate('/verify-email', { state: { email: result.email } });
         }
@@ -83,7 +79,7 @@ export default function SignIn() {
     onError: () => {
       toast({ title: 'Login Google Gagal', description: 'Popup Google ditutup atau terjadi kesalahan', variant: 'destructive' });
     },
-    flow: 'auth-code',
+    flow: 'implicit',
   });
 
   const validateForm = (): boolean => {
