@@ -11,15 +11,22 @@ class ApiCorsMiddleware
     public function handle(Request $request, Closure $next): Response
     {
         $origin = $request->header('Origin');
+        // Add all possible frontend origins
         $allowedOrigins = [
             'http://localhost:5173',
             'http://localhost:3000',
             'https://psajfooddelivery.vercel.app',
             'https://psajfooddelivery-frontend.vercel.app',
+            'https://warung-edin-sandy.vercel.app',
             'https://psajfooddelivery-production.up.railway.app',
         ];
 
-        $validOrigin = $origin && in_array($origin, $allowedOrigins) ? $origin : $allowedOrigins[0];
+        // Allow ANY vercel.app subdomain for flexibility
+        if ($origin && (str_contains($origin, 'vercel.app') || in_array($origin, $allowedOrigins))) {
+            $validOrigin = $origin;
+        } else {
+            $validOrigin = $allowedOrigins[0];
+        }
 
         if ($request->getMethod() === 'OPTIONS') {
             return response('', 200)
