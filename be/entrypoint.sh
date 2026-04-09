@@ -174,6 +174,15 @@ else
     echo "   Skipped (no database configured)"
 fi
 
+# Step 9.5: Seed database (create admin account)
+echo "9️⃣ .5️⃣  Seeding admin account..."
+if [ ! -z "$MYSQLHOST" ]; then
+    php artisan db:seed --class=AdminSeeder --force --no-interaction 2>&1 | tail -2 || echo "   (seeding skipped)"
+    echo "   ✅ Admin account ready"
+else
+    echo "   Skipped (no database configured)"
+fi
+
 # Step 10: START Laravel
 echo ""
 echo "========================================="

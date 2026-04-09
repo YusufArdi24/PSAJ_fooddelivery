@@ -25,7 +25,16 @@ class AdminSeeder extends Seeder
         ];
 
         foreach ($admins as $adminData) {
+            // Check if admin already exists (prevents duplicates on redeploy)
+            $existingAdmin = Admin::where('email', $adminData['email'])->first();
+            
+            if ($existingAdmin) {
+                echo "✅ Admin account already exists: {$adminData['email']}\n";
+                continue;
+            }
+
             Admin::create($adminData);
+            echo "✅ Admin account created: {$adminData['email']}\n";
         }
     }
 }
