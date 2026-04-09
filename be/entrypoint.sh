@@ -50,6 +50,9 @@ sed -i "s|^APP_ENV=.*|APP_ENV=$APP_ENV|" .env
 sed -i "s|^APP_DEBUG=.*|APP_DEBUG=$APP_DEBUG|" .env
 sed -i "s|^APP_KEY=.*|APP_KEY=$APP_KEY|" .env
 
+# CRITICAL: Ensure DB_CONNECTION is ALWAYS mysql (not sqlite!)
+sed -i "s|^DB_CONNECTION=.*|DB_CONNECTION=mysql|" .env
+
 # Step 4: Handle Railway MySQL variables
 echo "4️⃣  Configuring database..."
 if [ ! -z "$MYSQLHOST" ]; then
