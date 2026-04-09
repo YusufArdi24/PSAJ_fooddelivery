@@ -3,7 +3,13 @@
  */
 
 // Base API URL - use proxy in development, direct URL in production
-export const API_BASE_URL = '/api/v1';
+// Check for environment variable first (Vercel), or use proxy
+const isDevelopment = import.meta.env.MODE === 'development';
+const envApiUrl = import.meta.env.VITE_API_BASE_URL;
+
+export const API_BASE_URL = isDevelopment 
+  ? '/api/v1'  // Use Vite proxy in development
+  : (envApiUrl || '/api/v1');  // Use VITE_API_BASE_URL in production, fallback to proxy
 
 // API endpoints configuration
 export const API_ENDPOINTS = {
