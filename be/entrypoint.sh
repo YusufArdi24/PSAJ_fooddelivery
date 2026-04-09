@@ -4,6 +4,9 @@
 set -e
 
 echo "Setting up Laravel application..."
+echo "This script handles both Laravel and Railway MySQL variable formats:"
+echo "  Railway format: MYSQLHOST, MYSQLDATABASE, MYSQLUSER, MYSQLPASSWORD"
+echo "  Laravel format: DB_HOST, DB_DATABASE, DB_USERNAME, DB_PASSWORD"
 
 # Ensure .env exists
 if [ ! -f /app/.env ]; then
@@ -24,8 +27,31 @@ sed -i "s|^APP_URL=.*|APP_URL=$APP_URL|g" /app/.env
 sed -i "s|^APP_ENV=.*|APP_ENV=$APP_ENV|g" /app/.env
 sed -i "s|^APP_DEBUG=.*|APP_DEBUG=$APP_DEBUG|g" /app/.env
 
-# Database configuration
+# Database configuration - Handle both Laravel and Railway format
+# Railway uses: MYSQLHOST, MYSQLDATABASE, MYSQLUSER, MYSQLPASSWORD
+# Laravel uses: DB_HOST, DB_DATABASE, DB_USERNAME, DB_PASSWORD
+
+# Convert Railway MySQL variables to Laravel format if they exist
+if [ ! -z "$MYSQLHOST" ]; then
+    DB_HOST="$MYSQLHOST"
+fi
+
+if [ ! -z "$MYSQLDATABASE" ]; then
+    DB_DATABASE="$MYSQLDATABASE"
+fi
+
+if [ ! -z "$MYSQLUSER" ]; then
+    DB_USERNAME="$MYSQLUSER"
+fi
+
+if [ ! -z "$MYSQLPASSWORD" ]; then
+    DB_PASSWORD="$MYSQLPASSWORD"
+fi
+
+# Now set the .env file with the proper variables
 if [ ! -z "$DB_HOST" ]; then
+    echo "Configuring database: $DB_HOST"
+    sed -i "s|^DB_CONNECTION=.*|DB_CONNECTION=mysql|g" /app/.env
     sed -i "s|^DB_HOST=.*|DB_HOST=$DB_HOST|g" /app/.env
     sed -i "s|^DB_PORT=.*|DB_PORT=${DB_PORT:-3306}|g" /app/.env
     sed -i "s|^DB_DATABASE=.*|DB_DATABASE=${DB_DATABASE:-railway}|g" /app/.env
@@ -37,6 +63,10 @@ echo "Environment variables loaded."
 echo "APP_URL: $APP_URL"
 echo "APP_ENV: $APP_ENV"
 echo "APP_DEBUG: $APP_DEBUG"
+if [ ! -z "$DB_HOST" ]; then
+    echo "Database Host: $DB_HOST"
+    echo "Database Name: ${DB_DATABASE:-Not set}"
+fi
 
 # Cache configuration
 echo "Running cache:clear..."
