@@ -10,6 +10,8 @@ use App\Observers\MenuObserver;
 use App\Observers\PromoObserver;
 use App\Observers\OrderObserver;
 use App\Notifications\CustomerVerifyEmail;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\Transports\ResendTransport;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -26,6 +28,11 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Register Resend mail transport
+        Mail::extend('resend', function (array $config) {
+            return new ResendTransport(env('RESEND_API_KEY'));
+        });
+
         Menu::observe(MenuObserver::class);
         Promo::observe(PromoObserver::class);
         Order::observe(OrderObserver::class);
