@@ -12,6 +12,9 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // LIVEWIRE JS MIDDLEWARE - Must be first to intercept requests before Filament
+        $middleware->prepend(\App\Http\Middleware\ServeLivewireJS::class);
+
         // Trust proxies for HTTPS on Railway
         $middleware->trustProxies(
             '*',

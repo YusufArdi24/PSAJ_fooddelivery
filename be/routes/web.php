@@ -11,64 +11,6 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-// TEST ENDPOINT
-Route::get('/_test-livewire', function () {
-    $publicPath = public_path('livewire/livewire.js');
-    $vendorPath = base_path('vendor/livewire/livewire/dist/livewire.js');
-    
-    return response()->json([
-        'public_exists' => file_exists($publicPath),
-        'vendor_exists' => file_exists($vendorPath),
-        'public_path' => $publicPath,
-        'vendor_path' => $vendorPath,
-    ]);
-});
-
-/**
- * LIVEWIRE JS ROUTE - MUST BE FIRST BEFORE OTHER ROUTES
- * This route serves the Livewire JavaScript file which is critical for Filament admin panel
- */
-Route::get('/livewire/livewire.js', function () {
-    $publicPath = public_path('livewire/livewire.js');
-    
-    // Method 1: Serve from public folder if exists
-    if (file_exists($publicPath)) {
-        return response()->file($publicPath, [
-            'Content-Type' => 'application/javascript; charset=utf-8',
-            'Cache-Control' => 'public, max-age=31536000',
-            'Access-Control-Allow-Origin' => '*',
-        ]);
-    }
-    
-    // Method 2: Try to serve from vendor directory directly
-    $vendorPaths = [
-        base_path('vendor/livewire/livewire/dist/livewire.js'),
-        base_path('vendor/livewire/livewire/dist/livewire.umd.js'),
-    ];
-    
-    foreach ($vendorPaths as $vendorPath) {
-        if (file_exists($vendorPath)) {
-            return response()->file($vendorPath, [
-                'Content-Type' => 'application/javascript; charset=utf-8',
-                'Cache-Control' => 'public, max-age=31536000',
-                'Access-Control-Allow-Origin' => '*',
-            ]);
-        }
-    }
-    
-    // Method 3: If Livewire is available, use its response
-    if (class_exists(\Livewire\Livewire::class)) {
-        try {
-            return \Livewire\Livewire::response('GET', request()->getPathInfo(), request());
-        } catch (\Exception $e) {
-            // Silent fail, try next method
-        }
-    }
-    
-    // No file found - return 404
-    abort(404, 'Livewire JavaScript file not found');
-})->withoutMiddleware('web')->name('livewire.script');
-
 // Storage files with CORS support
 Route::middleware(['storage.cors'])->group(function () {
     Route::get('/storage/{path}', function ($path) {
