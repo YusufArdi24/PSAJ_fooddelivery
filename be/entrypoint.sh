@@ -170,6 +170,7 @@ echo ""
 echo "6️⃣  Clearing Laravel caches (aggressive)..."
 rm -rf bootstrap/cache/config.php bootstrap/cache/*.php
 php artisan config:clear --no-interaction 2>/dev/null || echo "   (config:clear skipped)"
+php artisan route:clear --no-interaction 2>/dev/null || echo "   (route:clear skipped)"
 php artisan cache:clear --no-interaction 2>/dev/null || echo "   (cache:clear skipped)"
 php artisan view:clear --no-interaction 2>/dev/null || echo "   (view:clear skipped)"
 echo "   Cache cleared successfully"
@@ -216,10 +217,10 @@ else
     echo "   Skipped (no database configured)"
 fi
 
-# Step 10: Optimize application (cache routes, config, etc)
+# Step 10: Optimize application (cache config only - skip route cache for Livewire)
 echo "🔟  Optimizing application..."
 php artisan config:cache --no-interaction 2>/dev/null || echo "   (config:cache skipped)"
-php artisan route:cache --no-interaction 2>/dev/null || echo "   (route:cache skipped)"
+# Note: Skip route:cache because Livewire needs dynamic routes
 echo "   ✅ Optimization complete"
 echo ""
 echo "========================================="
