@@ -48,6 +48,8 @@ export default function SignIn() {
     onSuccess: async (tokenResponse) => {
       setIsGoogleLoading(true);
       try {
+        // For auth-code flow, tokenResponse contains code, not access_token
+        // We need to exchange it for tokens on backend
         const result = await googleAuthCustomer(tokenResponse.access_token);
 
         if (!result.success) throw new Error(result.message || 'Login Google gagal');
@@ -81,7 +83,7 @@ export default function SignIn() {
     onError: () => {
       toast({ title: 'Login Google Gagal', description: 'Popup Google ditutup atau terjadi kesalahan', variant: 'destructive' });
     },
-    flow: 'implicit',
+    flow: 'auth-code',
   });
 
   const validateForm = (): boolean => {

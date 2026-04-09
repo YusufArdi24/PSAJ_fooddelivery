@@ -28,8 +28,6 @@ export default defineConfig({
           });
           proxy.on('proxyRes', (proxyRes, req, _res) => {
             console.log('Received Response:', proxyRes.statusCode, req.url);
-            // Ensure CORS headers are passed through
-            proxyRes.headers['Access-Control-Allow-Origin'] = '*';
           });
         },
       },
