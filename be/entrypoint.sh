@@ -43,12 +43,14 @@ echo "   APP_URL: $APP_URL"
 APP_ENV="${APP_ENV:-production}"
 APP_DEBUG="${APP_DEBUG:-false}"
 APP_KEY="${APP_KEY:-base64:XbAzi6vg8BmX26gv/IrDr059QtHqeyoaOy4DoTIlUqU=}"
+APP_NAME="${APP_NAME:-Warung Edin}"
 
 # Update .env - use single quotes to avoid shell expansion
 sed -i.bak "s|^APP_URL=.*|APP_URL=$APP_URL|" .env
 sed -i "s|^APP_ENV=.*|APP_ENV=$APP_ENV|" .env
 sed -i "s|^APP_DEBUG=.*|APP_DEBUG=$APP_DEBUG|" .env
 sed -i "s|^APP_KEY=.*|APP_KEY=$APP_KEY|" .env
+sed -i "s|^APP_NAME=.*|APP_NAME=\"$APP_NAME\"|" .env
 
 # CRITICAL: Ensure DB_CONNECTION is ALWAYS mysql (not sqlite!)
 sed -i "s|^DB_CONNECTION=.*|DB_CONNECTION=mysql|" .env
@@ -62,7 +64,7 @@ if [ ! -z "$MAIL_PORT" ]; then sed -i "s|^MAIL_PORT=.*|MAIL_PORT=$MAIL_PORT|" .e
 if [ ! -z "$MAIL_USERNAME" ]; then sed -i "s|^MAIL_USERNAME=.*|MAIL_USERNAME=$MAIL_USERNAME|" .env; fi
 if [ ! -z "$MAIL_PASSWORD" ]; then sed -i "s|^MAIL_PASSWORD=.*|MAIL_PASSWORD=$MAIL_PASSWORD|" .env; fi
 if [ ! -z "$MAIL_FROM_ADDRESS" ]; then sed -i "s|^MAIL_FROM_ADDRESS=.*|MAIL_FROM_ADDRESS=$MAIL_FROM_ADDRESS|" .env; fi
-if [ ! -z "$MAIL_FROM_NAME" ]; then sed -i "s|^MAIL_FROM_NAME=.*|MAIL_FROM_NAME=$MAIL_FROM_NAME|" .env; fi
+if [ ! -z "$MAIL_FROM_NAME" ]; then sed -i "s|^MAIL_FROM_NAME=.*|MAIL_FROM_NAME=\"$MAIL_FROM_NAME\"|" .env; fi
 if [ ! -z "$MAIL_TIMEOUT" ]; then sed -i "s|^MAIL_TIMEOUT=.*|MAIL_TIMEOUT=$MAIL_TIMEOUT|" .env; fi
 echo "   ✅ Email service configured"
 
