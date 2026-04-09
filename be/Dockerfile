@@ -47,14 +47,11 @@ ENV APP_KEY=base64:XbAzi6vg8BmX26gv/IrDr059QtHqeyoaOy4DoTIlUqU= \
 # Install dependencies with --no-scripts to avoid artisan commands that need APP_URL
 RUN composer install --no-dev --no-scripts --optimize-autoloader
 
-# Run scripts manually in safe way (package:discover might fail but we can continue)
-RUN php artisan package:discover --ansi || true
-
-# DO NOT cache config during build - let runtime config:clear handle it
-# RUN php artisan config:cache || true
+# DO NOT run any artisan commands during build - they need valid APP_URL
+# Let entrypoint.sh handle all artisan commands at runtime
 
 # Expose port
 EXPOSE 8000
 
-# Use entrypoint script for proper environment setup at runtime
-ENTRYPOINT ["/app/entrypoint.sh"]
+# Use bash + entrypoint script via CMD (more reliable than ENTRYPOINT)
+CMD ["/bin/bash", "/app/entrypoint.sh"]
