@@ -15,8 +15,11 @@ class AddCoopHeader
     {
         $response = $next($request);
 
-        // Add COOP header to all responses - this allows Google OAuth popups to work
-        $response->header('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
+        // Allow-popups for Google OAuth & popups to close properly
+        $response->header('Cross-Origin-Opener-Policy', 'allow-popups');
+        
+        // COEP unsafe-none allows cross-origin resources (simpler, less restrictive)
+        $response->header('Cross-Origin-Embedder-Policy', 'unsafe-none');
 
         return $response;
     }

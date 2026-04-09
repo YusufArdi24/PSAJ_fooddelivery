@@ -76,8 +76,15 @@ export default function SignIn() {
         setIsGoogleLoading(false);
       }
     },
-    onError: () => {
-      toast({ title: 'Login Google Gagal', description: 'Popup Google ditutup atau terjadi kesalahan', variant: 'destructive' });
+    onError: (error: any) => {
+      console.error('Google Login Error:', error);
+      const errorMsg = error?.error_description || error?.error || 'Popup Google ditutup atau terjadi kesalahan';
+      toast({ 
+        title: 'Login Google Gagal', 
+        description: errorMsg, 
+        variant: 'destructive' 
+      });
+      setIsGoogleLoading(false);
     },
     flow: 'implicit',
   });
