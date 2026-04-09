@@ -72,8 +72,7 @@ class PendingRegistrationController extends Controller
 
         try {
             // Queue email asynchronously - won't block registration if email service fails
-            Mail::queue(new OtpVerificationMail($otp, $request->name))
-                ->to($request->email);
+            Mail::to($request->email)->queue(new OtpVerificationMail($otp, $request->name));
             Log::info('OTP email queued successfully', ['email' => $request->email]);
         } catch (\Exception $e) {
             // Log error but don't fail registration - email will be retried or manually sent later
@@ -191,8 +190,7 @@ class PendingRegistrationController extends Controller
 
         try {
             // Queue email asynchronously - won't block Google auth if email service fails
-            Mail::queue(new OtpVerificationMail($otp, $name))
-                ->to($email);
+            Mail::to($email)->queue(new OtpVerificationMail($otp, $name));
         } catch (\Exception $e) {
             // Log error but don't fail Google auth
             Log::warning('Failed to queue OTP email for Google auth:', [
@@ -314,8 +312,7 @@ class PendingRegistrationController extends Controller
 
         try {
             // Queue email asynchronously - won't block OTP resend if email service fails
-            Mail::queue(new OtpVerificationMail($otp, $pending->name))
-                ->to($pending->email);
+            Mail::to($pending->email)->queue(new OtpVerificationMail($otp, $pending->name));
         } catch (\Exception $e) {
             // Log error but don't fail OTP resend
             Log::warning('Failed to queue OTP resend email:', [
