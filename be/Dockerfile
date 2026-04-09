@@ -35,7 +35,8 @@ RUN chmod +x /app/entrypoint.sh
 RUN mkdir -p /var/log/nginx /var/cache/nginx
 
 # Copy .env from .env.example for build time
-RUN cp .env.example .env
+RUN cp .env.example .env && \
+    sed -i 's|^APP_URL=.*|APP_URL=http://127.0.0.1:8000|g' .env
 
 # Set build-time environment variables for composer install
 ENV APP_KEY=base64:XbAzi6vg8BmX26gv/IrDr059QtHqeyoaOy4DoTIlUqU= \
