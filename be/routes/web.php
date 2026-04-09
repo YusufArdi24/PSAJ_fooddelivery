@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\AdminPushSubscriptionController;
 use App\Http\Controllers\AdminNotificationController;
 use App\Http\Controllers\Admin\ReportController;
@@ -15,7 +16,7 @@ Route::get('/', function () {
 try {
     \Livewire\Livewire::routes();
 } catch (\Exception $e) {
-    \Log::error('Livewire routes registration failed: ' . $e->getMessage());
+    Log::error('Livewire routes registration failed: ' . $e->getMessage());
 }
 
 // Storage files with CORS support
