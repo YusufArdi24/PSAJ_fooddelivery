@@ -158,5 +158,14 @@ Route::prefix('v1')->group(function () {
         Route::get('/admin/admins', [UserController::class, 'getAllAdmins']);
         Route::delete('/admin/admins/{id}', [UserController::class, 'deleteAdmin']);
     });
-    
+});
+
+// DEBUG endpoint - check Livewire files existence
+Route::get('/v1/debug/livewire', function () {
+    return response()->json([
+        'vendor_livewire_exists' => file_exists(public_path('vendor/livewire/livewire.js')),
+        'livewire_exists' => file_exists(public_path('livewire/livewire.js')),
+        'vendor_path' => public_path('vendor/livewire/livewire.js'),
+        'file_size' => file_exists(public_path('vendor/livewire/livewire.js')) ? filesize(public_path('vendor/livewire/livewire.js')) : 0,
+    ]);
 });
