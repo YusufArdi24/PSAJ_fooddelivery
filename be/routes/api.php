@@ -74,6 +74,7 @@ Route::prefix('v1')->group(function () {
     // Test email routes (remove in production)
     Route::get('/test/customer-email', [TestEmailController::class, 'testCustomerEmail']);
     Route::get('/test/admin-email', [TestEmailController::class, 'testAdminEmail']);
+    Route::get('/test/otp-email', [TestEmailController::class, 'testOtpEmail']);
     
     // Protected customer routes
     Route::middleware(['auth:sanctum', 'customer'])->group(function () {

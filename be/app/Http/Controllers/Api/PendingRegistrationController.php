@@ -435,37 +435,39 @@ class PendingRegistrationController extends Controller
     }
 
     /**
-     * Send email with minimal blocking
-     * - Try once with short timeout (5 seconds max)
-     * - If fails, queue for background retry
-     * - Always return immediately to prevent user waiting
+     * Send email - simple and direct
+     * With QUEUE_CONNECTION=sync, queuing is immediate anyway
      */
     private function sendEmailWithRetry($email, $otp, $name)
     {
         try {
-            // Try ONCE with short timeout - just attempt synchronously
-            // If fails quickly (< 5 sec), queue it for retry
-            Mail::to($email)->send(new OtpVerificationMail($otp, $name));
-            Log::info("Email sent successfully to {$email}");
-            return true;
-        } catch (\Exception $e) {
-            // Log the error but don't fail - user can manually resend
-            Log::warning("Email send attempt failed, user can retry", [
+            Log::info("Attempting to send OTP email", [
                 'email' => $email,
-                'error' => $e->getMessage(),
+                'queue_driver' => config('queue.default'),
+                'mail_driver' => config('mail.default'),
             ]);
             
-            // Queue for retry if sync driver supports queueing
-            try {
-                Mail::to($email)->queue(new OtpVerificationMail($otp, $name));
-                Log::info("Email queued for retry to {$email}");
-            } catch (\Exception $qe) {
-                Log::error("Could not queue email for retry", [
-                    'email' => $email,
-                    'error' => $qe->getMessage(),
-                ]);
-            }
+            // Simple send - no retries, no queue fallback
+            Mail::to($email)->send(new OtpVerificationMail($otp, $name));
             
+            Log::info("OTP email sent successfully", [
+                'email' => $email,
+                'otp' => $otp,
+            ]);
+            return true;
+            
+        } catch (\Exception $e) {
+            Log::error("Failed to send OTP email - SMTP error", [
+                'email' => $email,
+                'exception' => get_class($e),
+                'error_message' => $e->getMessage(),
+                'error_code' => $e->getCode(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            
+            // Don't throw - let user proceed and request manual resend
             return false;
         }
     }
