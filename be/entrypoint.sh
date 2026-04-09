@@ -58,7 +58,16 @@ sed -i "s|^DB_CONNECTION=.*|DB_CONNECTION=mysql|" .env
 # Step 3.5: Handle Railway Email/MAIL variables
 echo "3.5️⃣  Configuring email service..."
 if [ ! -z "$MAIL_MAILER" ]; then sed -i "s|^MAIL_MAILER=.*|MAIL_MAILER=$MAIL_MAILER|" .env; fi
-if [ ! -z "$MAIL_SCHEME" ]; then sed -i "s|^MAIL_SCHEME=.*|MAIL_SCHEME=$MAIL_SCHEME|" .env; fi
+
+# Convert "tls" scheme to "smtp" (Symfony Mailer compatibility)
+if [ ! -z "$MAIL_SCHEME" ]; then
+  if [ "$MAIL_SCHEME" = "tls" ]; then
+    MAIL_SCHEME="smtp"
+    echo "   Converting MAIL_SCHEME: tls → smtp (Symfony Mailer compat)"
+  fi
+  sed -i "s|^MAIL_SCHEME=.*|MAIL_SCHEME=$MAIL_SCHEME|" .env
+fi
+
 if [ ! -z "$MAIL_HOST" ]; then sed -i "s|^MAIL_HOST=.*|MAIL_HOST=$MAIL_HOST|" .env; fi
 if [ ! -z "$MAIL_PORT" ]; then sed -i "s|^MAIL_PORT=.*|MAIL_PORT=$MAIL_PORT|" .env; fi
 if [ ! -z "$MAIL_USERNAME" ]; then sed -i "s|^MAIL_USERNAME=.*|MAIL_USERNAME=$MAIL_USERNAME|" .env; fi
