@@ -12,6 +12,14 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Trust proxies for HTTPS on Railway
+        $middleware->trustProxies(
+            '*',
+            Illuminate\Http\Request::HEADER_X_FORWARDED_FOR |
+            Illuminate\Http\Request::HEADER_X_FORWARDED_PROTO |
+            Illuminate\Http\Request::HEADER_X_FORWARDED_HOST
+        );
+
         $middleware->alias([
             'customer' => \App\Http\Middleware\CustomerMiddleware::class,
             'admin' => \App\Http\Middleware\AdminMiddleware::class,

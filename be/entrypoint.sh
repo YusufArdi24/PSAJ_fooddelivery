@@ -24,9 +24,19 @@ echo "3️⃣  Setting environment variables..."
 
 # ENSURE APP_URL is valid
 if [ -z "$APP_URL" ]; then
-    APP_URL="http://127.0.0.1:8000"
+    # Production on Railway: use HTTPS
+    if [ "$APP_ENV" = "production" ] && [ ! -z "$RAILWAY_DOMAIN" ]; then
+        APP_URL="https://$RAILWAY_DOMAIN"
+    else
+        APP_URL="http://127.0.0.1:8000"
+    fi
 elif [[ ! "$APP_URL" =~ ^https?:// ]]; then
-    APP_URL="http://$APP_URL"
+    # Plain domain without protocol - add https for production
+    if [ "$APP_ENV" = "production" ]; then
+        APP_URL="https://$APP_URL"
+    else
+        APP_URL="http://$APP_URL"
+    fi
 fi
 
 # Remove trailing slash if present
@@ -35,7 +45,7 @@ APP_URL="${APP_URL%/}"
 # Verify no invalid characters
 if [[ "$APP_URL" =~ [[:space:]] ]]; then
     echo "   ❌ APP_URL contains spaces! Using fallback..."
-    APP_URL="http://127.0.0.1:8000"
+    APP_URL="https://127.0.0.1:8000"
 fi
 
 echo "   APP_URL: $APP_URL"
@@ -138,7 +148,11 @@ echo "   MAIL_FROM_ADDRESS: $FINAL_MAIL_FROM"
 
 if [ -z "$FINAL_URL" ] || [ "$FINAL_URL" = "http://localhost" ]; then
     echo "   ⚠️ Invalid APP_URL in .env, fixing..."
-    sed -i "s|^APP_URL=.*|APP_URL=http://127.0.0.1:8000|" .env
+    if [ "$APP_ENV" = "production" ] && [ ! -z "$RAILWAY_DOMAIN" ]; then
+        sed -i "s|^APP_URL=.*|APP_URL=https://$RAILWAY_DOMAIN|" .env
+    else
+        sed -i "s|^APP_URL=.*|APP_URL=http://127.0.0.1:8000|" .env
+    fi
 fi
 
 if [ "$FINAL_DB_CONNECTION" != "mysql" ]; then
