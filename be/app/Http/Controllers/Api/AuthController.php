@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Facades\Log;
 
 class AuthController extends Controller
 {
@@ -32,29 +33,52 @@ class AuthController extends Controller
             ], 422);
         }
 
-        $customer = Customer::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'phone' => $request->phone ?? '',
-            'address' => $request->address ?? '',
-            'password' => $request->password,
-        ]);
+        try {
+            $customer = Customer::create([
+                'name' => $request->name,
+                'email' => $request->email,
+                'phone' => $request->phone ?? '',
+                'address' => $request->address ?? '',
+                'password' => $request->password,
+            ]);
 
-        // Send email verification immediately after registration
-        $customer->sendEmailVerificationNotification();
+            // Send email verification (non-blocking failure)
+            try {
+                $customer->sendEmailVerificationNotification();
+            } catch (\Exception $e) {
+                Log::warning('Email verification failed but registration succeeded', [
+                    'customer_id' => $customer->id,
+                    'email' => $customer->email,
+                    'error' => $e->getMessage(),
+                ]);
+                // Registration should not fail due to email issues
+            }
 
-        $token = $customer->createToken('auth-token')->plainTextToken;
+            $token = $customer->createToken('auth-token')->plainTextToken;
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Customer registered successfully',
-            'requires_verification' => true,
-            'data' => [
-                'customer' => $customer,
-                'token' => $token,
-                'token_type' => 'Bearer'
-            ]
-        ], 201);
+            return response()->json([
+                'success' => true,
+                'message' => 'Customer registered successfully',
+                'requires_verification' => true,
+                'data' => [
+                    'customer' => $customer,
+                    'token' => $token,
+                    'token_type' => 'Bearer'
+                ]
+            ], 201);
+        } catch (\Exception $e) {
+            Log::error('Customer registration failed', [
+                'status' => 500,
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Registration failed: ' . $e->getMessage(),
+            ], 500);
+        }
     }
 
     public function customerLogin(Request $request)
@@ -177,7 +201,16 @@ class AuthController extends Controller
             // verification email so they can always complete the flow — whether it's
             // their first Google link or a repeat attempt before they verified.
             if (!$customer->is_verified) {
-                $customer->sendEmailVerificationNotification();
+                try {
+                    $customer->sendEmailVerificationNotification();
+                } catch (\Exception $e) {
+                    Log::warning('Failed to queue verification email for Google auth:', [
+                        'customer_id' => $customer->id,
+                        'email' => $customer->email,
+                        'error' => $e->getMessage(),
+                    ]);
+                    // Don't fail the login if email queueing fails
+                }
             }
         } else {
             // Create new customer (no password for OAuth users)
@@ -192,7 +225,16 @@ class AuthController extends Controller
                 'is_verified'=> false,
             ]);
             // Send verification email so the user must confirm before proceeding
-            $customer->sendEmailVerificationNotification();
+            try {
+                $customer->sendEmailVerificationNotification();
+            } catch (\Exception $e) {
+                Log::warning('Failed to queue verification email for new Google customer:', [
+                    'customer_id' => $customer->id,
+                    'email' => $customer->email,
+                    'error' => $e->getMessage(),
+                ]);
+                // Don't fail the account creation if email queueing fails
+            }
         }
 
         // Single-session enforcement: block Google login if there is already an active session.

@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class PendingRegistrationController extends Controller
@@ -69,7 +70,20 @@ class PendingRegistrationController extends Controller
             ]
         );
 
-        Mail::to($request->email)->send(new OtpVerificationMail($otp, $request->name));
+        try {
+            // Queue email asynchronously - won't block registration if email service fails
+            Mail::queue(new OtpVerificationMail($otp, $request->name))
+                ->to($request->email);
+            Log::info('OTP email queued successfully', ['email' => $request->email]);
+        } catch (\Exception $e) {
+            // Log error but don't fail registration - email will be retried or manually sent later
+            Log::warning('Failed to queue OTP email for registration', [
+                'email' => $request->email,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            // Note: Registration succeeds even if email fails - user can request email resend
+        }
 
         return response()->json([
             'success'       => true,
@@ -175,7 +189,17 @@ class PendingRegistrationController extends Controller
             ]
         );
 
-        Mail::to($email)->send(new OtpVerificationMail($otp, $name));
+        try {
+            // Queue email asynchronously - won't block Google auth if email service fails
+            Mail::queue(new OtpVerificationMail($otp, $name))
+                ->to($email);
+        } catch (\Exception $e) {
+            // Log error but don't fail Google auth
+            Log::warning('Failed to queue OTP email for Google auth:', [
+                'email' => $email,
+                'error' => $e->getMessage(),
+            ]);
+        }
 
         return response()->json([
             'success'       => true,
@@ -288,7 +312,17 @@ class PendingRegistrationController extends Controller
             'otp_expires_at' => now()->addMinutes(10),
         ]);
 
-        Mail::to($pending->email)->send(new OtpVerificationMail($otp, $pending->name));
+        try {
+            // Queue email asynchronously - won't block OTP resend if email service fails
+            Mail::queue(new OtpVerificationMail($otp, $pending->name))
+                ->to($pending->email);
+        } catch (\Exception $e) {
+            // Log error but don't fail OTP resend
+            Log::warning('Failed to queue OTP resend email:', [
+                'email' => $pending->email,
+                'error' => $e->getMessage(),
+            ]);
+        }
 
         return response()->json([
             'success' => true,

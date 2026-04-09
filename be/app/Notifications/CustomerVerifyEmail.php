@@ -13,6 +13,14 @@ class CustomerVerifyEmail extends Notification
 {
     use Queueable;
 
+    public function __construct()
+    {
+        // Auto-queue this notification using the default queue connection and failover strategy
+        // The failover queue will attempt: database -> deferred -> sync
+        // If all fail, the mail will be logged for manual resending
+        $this->afterCommit();
+    }
+
     /**
      * The callback that should be used to create the verify email URL.
      *

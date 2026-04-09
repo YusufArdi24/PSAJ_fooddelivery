@@ -17,6 +17,8 @@ class ApiCorsMiddleware
             'https://psajfooddelivery.vercel.app',
             'https://psajfooddelivery-frontend.vercel.app',
             'https://psajfooddelivery-production.up.railway.app',
+            'https://warung-edin-sandy.vercel.app',
+            'https://warung-edin.vercel.app',
         ];
 
         $validOrigin = $origin && in_array($origin, $allowedOrigins) ? $origin : $allowedOrigins[0];

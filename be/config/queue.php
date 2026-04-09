@@ -13,7 +13,7 @@ return [
     |
     */
 
-    'default' => env('QUEUE_CONNECTION', 'database'),
+    'default' => env('QUEUE_CONNECTION', 'failover'),
 
     /*
     |--------------------------------------------------------------------------
@@ -86,6 +86,7 @@ return [
             'connections' => [
                 'database',
                 'deferred',
+                'sync',
             ],
         ],
 
