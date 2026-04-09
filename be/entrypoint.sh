@@ -55,23 +55,34 @@ sed -i "s|^DB_CONNECTION=.*|DB_CONNECTION=mysql|" .env
 
 # Step 4: Handle Railway MySQL variables
 echo "4️⃣  Configuring database..."
-if [ ! -z "$MYSQLHOST" ]; then
-    sed -i "s|^DB_HOST=.*|DB_HOST=$MYSQLHOST|" .env
-    sed -i "s|^DB_PORT=.*|DB_PORT=${MYSQLPORT:-3306}|" .env
-    sed -i "s|^DB_DATABASE=.*|DB_DATABASE=$MYSQLDATABASE|" .env
-    sed -i "s|^DB_USERNAME=.*|DB_USERNAME=$MYSQLUSER|" .env
-    sed -i "s|^DB_PASSWORD=.*|DB_PASSWORD=$MYSQLPASSWORD|" .env
-    echo "   Database: $MYSQLHOST"
-fi
+echo "   Environment Variables:"
+echo "   MYSQLHOST=$MYSQLHOST"
+echo "   MYSQLDATABASE=$MYSQLDATABASE"
+echo "   MYSQLUSER=$MYSQLUSER"
+echo "   MYSQLPORT=${MYSQLPORT:-3306}"
+
+# ALWAYS update database config - CRITICAL FOR PRODUCTION
+sed -i "s|^DB_HOST=.*|DB_HOST=${MYSQLHOST:-mysql.railway.internal}|" .env
+sed -i "s|^DB_PORT=.*|DB_PORT=${MYSQLPORT:-3306}|" .env
+sed -i "s|^DB_DATABASE=.*|DB_DATABASE=${MYSQLDATABASE:-railway}|" .env
+sed -i "s|^DB_USERNAME=.*|DB_USERNAME=${MYSQLUSER:-root}|" .env
+sed -i "s|^DB_PASSWORD=.*|DB_PASSWORD=${MYSQLPASSWORD:-}|" .env
+
+echo "   ✅ Database configured"
 
 # Step 5: VERIFY .env was written correctly
 echo "5️⃣  Verifying .env configuration..."
 FINAL_URL=$(grep "^APP_URL=" .env | cut -d= -f2-)
 FINAL_DB_CONNECTION=$(grep "^DB_CONNECTION=" .env | cut -d= -f2-)
 FINAL_DB_HOST=$(grep "^DB_HOST=" .env | cut -d= -f2-)
-echo "   Stored APP_URL: $FINAL_URL"
-echo "   Stored DB_CONNECTION: $FINAL_DB_CONNECTION"
-echo "   Stored DB_HOST: $FINAL_DB_HOST"
+FINAL_DB_DATABASE=$(grep "^DB_DATABASE=" .env | cut -d= -f2-)
+FINAL_DB_USERNAME=$(grep "^DB_USERNAME=" .env | cut -d= -f2-)
+
+echo "   APP_URL: $FINAL_URL"
+echo "   DB_CONNECTION: $FINAL_DB_CONNECTION"
+echo "   DB_HOST: $FINAL_DB_HOST"
+echo "   DB_DATABASE: $FINAL_DB_DATABASE"
+echo "   DB_USERNAME: $FINAL_DB_USERNAME"
 
 if [ -z "$FINAL_URL" ] || [ "$FINAL_URL" = "http://localhost" ]; then
     echo "   ⚠️ Invalid APP_URL in .env, fixing..."

@@ -51,8 +51,6 @@ EXPOSE 8000
 
 # Set entrypoint to run initialization script
 ENTRYPOINT ["/bin/bash", "/app/entrypoint.sh"]
-
-# Set entrypoint script
 ENTRYPOINT ["/bin/bash", "/app/entrypoint.sh"]
 
 # Use bash + entrypoint script via CMD (more reliable than ENTRYPOINT)
