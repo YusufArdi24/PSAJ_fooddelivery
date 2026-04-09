@@ -26,7 +26,16 @@ class ServeLivewireJS
      */
     private function serveLivewireScript()
     {
-        // Priority 1: Check public/livewire/livewire.js
+        // Priority 1: Check public/vendor/livewire/livewire.js (published location)
+        $vendorPublicPath = public_path('vendor/livewire/livewire.js');
+        if (file_exists($vendorPublicPath)) {
+            return response()->file($vendorPublicPath, [
+                'Content-Type' => 'application/javascript; charset=utf-8',
+                'Cache-Control' => 'public, max-age=31536000',
+            ]);
+        }
+
+        // Priority 2: Check public/livewire/livewire.js (alternative location)
         $publicPath = public_path('livewire/livewire.js');
         if (file_exists($publicPath)) {
             return response()->file($publicPath, [
@@ -35,13 +44,13 @@ class ServeLivewireJS
             ]);
         }
 
-        // Priority 2: Check vendor directory
-        $vendorPaths = [
+        // Priority 3: Check vendor directory
+        $vendorSourcePaths = [
             base_path('vendor/livewire/livewire/dist/livewire.js'),
             base_path('vendor/livewire/livewire/dist/livewire.umd.js'),
         ];
 
-        foreach ($vendorPaths as $path) {
+        foreach ($vendorSourcePaths as $path) {
             if (file_exists($path)) {
                 return response()->file($path, [
                     'Content-Type' => 'application/javascript; charset=utf-8',

@@ -13,7 +13,8 @@ class ExtractLivewireJS extends Command
     {
         $this->info('Extracting Livewire JavaScript...');
 
-        $targetDir = public_path('livewire');
+        // Primary target: public/vendor/livewire (where artisan publish typically puts it)
+        $targetDir = public_path('vendor/livewire');
         if (!is_dir($targetDir)) {
             mkdir($targetDir, 0755, true);
             $this->info("Created directory: $targetDir");
