@@ -11,8 +11,12 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-// Livewire routes - must be defined before other routes
-Livewire\Livewire::routes();
+// Livewire route registration - standard method
+try {
+    \Livewire\Livewire::routes();
+} catch (\Exception $e) {
+    \Log::error('Livewire routes registration failed: ' . $e->getMessage());
+}
 
 // Storage files with CORS support
 Route::middleware(['storage.cors'])->group(function () {

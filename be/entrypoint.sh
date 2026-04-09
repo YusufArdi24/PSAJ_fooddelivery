@@ -203,17 +203,34 @@ echo "8️⃣  Publishing package assets..."
 mkdir -p public/vendor public/livewire
 
 # Publish Livewire assets
-echo "   Publishing Livewire..."
-php artisan livewire:publish --assets --force 2>&1 | tail -3 || true
-php artisan filament:publish --force 2>&1 | tail -3 || true
+echo "   Publishing Livewire via artisan..."
+php artisan livewire:publish --assets --force 2>&1 | grep -i "published\|published\|copying" || echo "   (artisan publish attempted)"
+php artisan filament:publish --force 2>&1 | grep -i "published\|copied" || echo "   (filament publish attempted)"
 
-# Ensure livewire.js exists - if not, Livewire will generate dynamically
+# FALLBACK: Manual copy if artisan publish didn't work
 if [ ! -f "public/livewire/livewire.js" ]; then
-    echo "   ℹ️  Livewire will serve JS dynamically via route"
+    echo "   ℹ️  Artisan publish didn't create assets - trying manual extraction..."
+    
+    # Try to find and copy Livewire dist files
+    if [ -d "vendor/livewire/livewire/dist" ]; then
+        echo "   Found Livewire dist, copying..."
+        mkdir -p public/livewire
+        cp -v vendor/livewire/livewire/dist/*.js public/livewire/ 2>/dev/null || true
+        echo "   ✅ Livewire files copied manually"
+    elif [ -d "vendor/livewire/livewire/js" ]; then
+        echo "   Found Livewire js folder, copying..." 
+        mkdir -p public/livewire
+        cp -v vendor/livewire/livewire/js/*.js public/livewire/ 2>/dev/null || true
+        echo "   ✅ Livewire files copied manually"
+    fi
 fi
 
-# Verify vendors directory created
-ls -la public/vendor/livewire/ 2>/dev/null && echo "   ✅ Livewire vendor files found" || echo "   ℹ️  Livewire files will be generated on demand"
+# Final verification
+if [ -f "public/livewire/livewire.js" ]; then
+    echo "   ✅ Livewire JS file ready: $(ls -lh public/livewire/livewire.js | awk '{print $5, $9}')"
+else
+    echo "   ⚠️  Livewire JS file will be served dynamically via route"
+fi
 
 chmod -R 755 public/vendor public/livewire 2>/dev/null || true
 echo "   ✅ Assets configuration complete"
