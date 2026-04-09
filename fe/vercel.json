@@ -3,7 +3,6 @@
   "devCommand": "npm run dev",
   "installCommand": "npm ci",
   "framework": "vite",
-  "nodeVersion": "20.x",
   "outputDirectory": "dist",
   "env": {
     "VITE_API_BASE_URL": "@vite_api_base_url"
