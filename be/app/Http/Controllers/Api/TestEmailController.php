@@ -81,15 +81,21 @@ class TestEmailController extends Controller
             $otp = '123456';
             $name = 'Test User';
             
-            Log::info("Testing OTP email send", [
-                'email' => $email,
-                'mail_driver' => config('mail.default'),
+            // Detailed config logging
+            $config = [
+                'mail_mailer' => config('mail.default'),
                 'mail_host' => config('mail.mailers.smtp.host'),
                 'mail_port' => config('mail.mailers.smtp.port'),
                 'mail_scheme' => config('mail.mailers.smtp.scheme'),
                 'mail_timeout' => config('mail.mailers.smtp.timeout'),
+                'mail_from_address' => config('mail.from.address'),
+                'mail_from_name' => config('mail.from.name'),
+                'mail_username' => config('mail.mailers.smtp.username'),
+                'mail_encryption' => config('mail.mailers.smtp.scheme'),
                 'queue_driver' => config('queue.default'),
-            ]);
+            ];
+            
+            Log::info("Testing OTP email send - Full Config", $config);
             
             // Send test OTP email
             \Illuminate\Support\Facades\Mail::to($email)->send(
@@ -99,12 +105,8 @@ class TestEmailController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => "OTP test email sent to {$email}",
-                'config' => [
-                    'mail_driver' => config('mail.default'),
-                    'mail_host' => config('mail.mailers.smtp.host'),
-                    'mail_port' => config('mail.mailers.smtp.port'),
-                    'queue_driver' => config('queue.default'),
-                ]
+                'config' => $config,
+                'note' => 'If email doesn\'t arrive, check: 1) MAIL_FROM_ADDRESS validity, 2) Gmail spam folder, 3) Gmail app password, 4) 2FA enabled'
             ]);
             
         } catch (\Exception $e) {
@@ -114,9 +116,13 @@ class TestEmailController extends Controller
                 'error' => $e->getMessage(),
                 'error_class' => get_class($e),
                 'config' => [
-                    'mail_driver' => config('mail.default'),
+                    'mail_mailer' => config('mail.default'),
                     'mail_host' => config('mail.mailers.smtp.host'),
                     'mail_port' => config('mail.mailers.smtp.port'),
+                    'mail_scheme' => config('mail.mailers.smtp.scheme'),
+                    'mail_from_address' => config('mail.from.address'),
+                    'mail_from_name' => config('mail.from.name'),
+                    'mail_username' => config('mail.mailers.smtp.username'),
                     'queue_driver' => config('queue.default'),
                 ]
             ], 500);
