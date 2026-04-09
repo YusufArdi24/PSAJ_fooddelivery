@@ -6,3 +6,8 @@ dockerfile = "Dockerfile"
 restartPolicyType = "on_failure"
 restartPolicyMaxRetries = 5
 startCommand = "php artisan migrate --force && php artisan serve --host=0.0.0.0 --port=8000"
+
+[environments]
+APP_URL = "http://localhost:8000"
+APP_DEBUG = "false"
+APP_ENV = "production"
