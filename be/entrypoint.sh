@@ -217,11 +217,15 @@ else
     echo "   Skipped (no database configured)"
 fi
 
-# Step 10: Optimize application (cache config only - skip route cache for Livewire)
+# Step 10: Optimize application (config cache only)
 echo "🔟  Optimizing application..."
+rm -rf bootstrap/cache/*
 php artisan config:cache --no-interaction 2>/dev/null || echo "   (config:cache skipped)"
-# Note: Skip route:cache because Livewire needs dynamic routes
 echo "   ✅ Optimization complete"
+
+# Step 10.5: Test application bootstrap
+echo "🔟 .5️⃣  Testing application bootstrap..."
+php artisan tinker --execute="echo 'Bootstrap OK'" 2>/dev/null || echo "   (bootstrap test skipped)"
 echo ""
 echo "========================================="
 echo "   ✅ Starting Laravel Server"

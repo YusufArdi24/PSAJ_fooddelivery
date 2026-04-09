@@ -7,11 +7,6 @@ use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\DebugRevenueController;
 use Illuminate\Support\Facades\Response;
 
-// Livewire routes (MUST be before other routes to ensure JS file loads)
-Route::group(['prefix' => 'livewire'], function () {
-    Livewire\Livewire::routes();
-});
-
 Route::get('/', function () {
     return view('welcome');
 });

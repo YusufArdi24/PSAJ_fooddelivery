@@ -52,7 +52,7 @@ return [
     | override it here for cases where the domain is not automatic.
     |
     */
-    'app_url' => null,
+    'app_url' => env('APP_URL'),
 
     /*
     |--------------------------------------------------------------------------
