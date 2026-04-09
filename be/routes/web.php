@@ -11,6 +11,17 @@ Route::get('/', function () {
     return view('welcome');
 });
 
+// DEBUG: Check Livewire status
+Route::get('/_livewire-status', function () {
+    return response()->json([
+        'livewire_installed' => class_exists('\Livewire\Livewire'),
+        'livewire_version' => defined('\Livewire\LIVEWIRE_PATH') ? 'available' : 'not_found',
+        'php_version' => phpversion(),
+        'app_env' => config('app.env'),
+        'public_livewire_exists' => file_exists(public_path('livewire/livewire.js')),
+    ]);
+});
+
 // Storage files with CORS support
 Route::middleware(['storage.cors'])->group(function () {
     Route::get('/storage/{path}', function ($path) {
