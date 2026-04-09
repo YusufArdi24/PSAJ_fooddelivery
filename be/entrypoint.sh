@@ -175,11 +175,13 @@ else
 fi
 # Step 7: AGGRESSIVELY clear all Laravel caches
 echo "6️⃣  Clearing Laravel caches (aggressive)..."
-rm -rf bootstrap/cache/config.php bootstrap/cache/*.php
+rm -rf bootstrap/cache/*.php 2>/dev/null
+rm -rf bootstrap/cache/routes-* 2>/dev/null
 php artisan config:clear --no-interaction 2>/dev/null || echo "   (config:clear skipped)"
 php artisan route:clear --no-interaction 2>/dev/null || echo "   (route:clear skipped)"
 php artisan cache:clear --no-interaction 2>/dev/null || echo "   (cache:clear skipped)"
 php artisan view:clear --no-interaction 2>/dev/null || echo "   (view:clear skipped)"
+rm -rf bootstrap/cache/*.php 2>/dev/null || true
 echo "   Cache cleared successfully"
 
 # Step 7.5: Ensure public/storage exists
