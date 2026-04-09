@@ -47,6 +47,7 @@ APP_NAME="${APP_NAME:-Warung Edin}"
 
 # Update .env - use single quotes to avoid shell expansion
 sed -i.bak "s|^APP_URL=.*|APP_URL=$APP_URL|" .env
+sed -i "s|^ASSET_URL=.*|ASSET_URL=$APP_URL|" .env
 sed -i "s|^APP_ENV=.*|APP_ENV=$APP_ENV|" .env
 sed -i "s|^APP_DEBUG=.*|APP_DEBUG=$APP_DEBUG|" .env
 sed -i "s|^APP_KEY=.*|APP_KEY=$APP_KEY|" .env
