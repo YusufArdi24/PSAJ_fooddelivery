@@ -494,19 +494,50 @@ API response: ["error_messages":["Access denied due to unauthorized transaction,
 
 ## Environment Variable Check
 
-Ensure backend `.env` sudah tepat:
+Ensure backend `.env` sudah **EXACT** match dengan Midtrans dashboard:
 
 ```bash
-# For production
-MIDTRANS_IS_PRODUCTION=true
-MIDTRANS_CLIENT_KEY=Mid-client-PRODUCTION-KEY
+# Go to: https://dashboard.sandbox.midtrans.com/settings/config
+# Copy EXACT keys (including prefix)
 
 # For sandbox (testing)
 MIDTRANS_IS_PRODUCTION=false
-MIDTRANS_CLIENT_KEY=Mid-client-SANDBOX-KEY
+MIDTRANS_CLIENT_KEY=Mid-client-xxxxxxxxxxxxxx
+MIDTRANS_SERVER_KEY=Mid-server-xxxxxxxxxxxxxx
+
+# Keys harus EXACT - jangan ada space, jangan ada typo!
 ```
 
-## Additional Notes
+**Testing backend config:**
+```bash
+cd be
+
+# Clear cache
+php artisan config:cache
+php artisan config:clear
+
+# Verify keys loaded correctly
+php artisan tinker
+> config('services.midtrans.client_key')
+> config('services.midtrans.server_key')
+
+# Should output exact keys from .env
+```
+
+---
+
+## Menu Image Fix (DONE - Commit 0bcbba5)
+
+**Problem**: Image menu menjadi null saat halaman di-refresh
+
+**Fixed in:**
+- Backend: `be/app/Models/Menu.php` - Force load `image_url` attribute
+- Backend: `be/app/Http/Controllers/Api/MenuController.php` - Add Request parameter to show()
+- Frontend: `fe/src/services/menuService.ts` - Add fallback placeholder image
+
+**After this deploy:**
+- Images akan persist saat refresh
+- Jika image null, akan show placeholder SVG (tidak broken image)
 
 - **Midtrans snap.js loads from CDN** - tidak bisa self-hosted (security reason)
 - **Origin check adalah security feature** - melindungi dari unauthorized usage
