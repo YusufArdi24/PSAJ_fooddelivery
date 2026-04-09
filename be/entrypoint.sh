@@ -183,10 +183,20 @@ echo "   ✅ Storage configured"
 
 # Step 8: Publish Assets (Livewire + Filament)
 echo "8️⃣  Publishing package assets..."
-mkdir -p public/vendor
-php artisan livewire:publish --assets --no-interaction 2>&1 | grep -v "^$" | tail -3 || echo "   (Livewire publish skipped)"
-php artisan filament:publish --no-interaction 2>&1 | grep -v "^$" | tail -3 || echo "   (Filament publish skipped)"
-chmod -R 755 public/vendor 2>/dev/null || true
+mkdir -p public/vendor public/livewire
+
+# Publish Livewire assets aggressively
+echo "   Publishing Livewire..."
+php artisan livewire:publish --assets 2>&1 || true
+php artisan filament:publish 2>&1 || true
+
+# Ensure livewire.js exists
+if [ ! -f "public/livewire/livewire.js" ]; then
+    echo "   Attempting alternative Livewire extraction..."
+    php artisan vendor:publish --tag=livewire-assets --force 2>&1 || true
+fi
+
+chmod -R 755 public/vendor public/livewire 2>/dev/null || true
 echo "   ✅ Assets published successfully"
 
 # Step 9: Run migrations (only if database configured)
@@ -206,7 +216,11 @@ else
     echo "   Skipped (no database configured)"
 fi
 
-# Step 10: START Laravel
+# Step 10: Optimize application (cache routes, config, etc)
+echo "🔟  Optimizing application..."
+php artisan config:cache --no-interaction 2>/dev/null || echo "   (config:cache skipped)"
+php artisan route:cache --no-interaction 2>/dev/null || echo "   (route:cache skipped)"
+echo "   ✅ Optimization complete"
 echo ""
 echo "========================================="
 echo "   ✅ Starting Laravel Server"
