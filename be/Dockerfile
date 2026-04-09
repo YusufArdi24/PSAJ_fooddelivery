@@ -12,7 +12,7 @@ RUN apt-get update && apt-get install -y \
     libonig-dev \
     libxml2-dev \
     libzip-dev \
-    icu-dev \
+    libicu-dev \
     zip \
     unzip \
     nginx \
