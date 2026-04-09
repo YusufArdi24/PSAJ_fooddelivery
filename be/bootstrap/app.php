@@ -22,5 +22,16 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->append(\App\Http\Middleware\ApiCorsMiddleware::class);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
+        $exceptions->respond(function (\Throwable $exception) {
+            // Add CORS/COOP headers to error responses
+            return response()->json([
+                'success' => false,
+                'message' => $exception->getMessage(),
+            ], 500)
+                ->header('Access-Control-Allow-Origin', '*')
+                ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH')
+                ->header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept')
+                ->header('Cross-Origin-Opener-Policy', 'unsafe-none')
+                ->header('Cross-Origin-Embedder-Policy', 'unsafe-none');
+        });
     })->create();

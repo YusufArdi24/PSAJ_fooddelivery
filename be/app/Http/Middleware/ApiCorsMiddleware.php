@@ -36,8 +36,8 @@ class ApiCorsMiddleware
                 ->header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept')
                 ->header('Access-Control-Allow-Credentials', 'true')
                 ->header('Access-Control-Max-Age', '86400')
-                ->header('Cross-Origin-Opener-Policy', 'same-origin-allow-popups')
-                ->header('Cross-Origin-Embedder-Policy-Report-Only', 'require-corp');
+                ->header('Cross-Origin-Opener-Policy', 'unsafe-none')
+                ->header('Cross-Origin-Embedder-Policy', 'unsafe-none');
         }
 
         $response = $next($request);
@@ -49,7 +49,7 @@ class ApiCorsMiddleware
             ->header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept')
             ->header('Access-Control-Allow-Credentials', 'true')
             ->header('Access-Control-Expose-Headers', 'Content-Length, Content-Type, Authorization')
-            ->header('Cross-Origin-Opener-Policy', 'same-origin-allow-popups')
-            ->header('Cross-Origin-Embedder-Policy-Report-Only', 'require-corp');
+            ->header('Cross-Origin-Opener-Policy', 'unsafe-none')
+            ->header('Cross-Origin-Embedder-Policy', 'unsafe-none');
     }
 }
