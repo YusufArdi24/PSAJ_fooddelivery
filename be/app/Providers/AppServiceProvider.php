@@ -28,11 +28,6 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        // Register Livewire routes (must be before other route registration)
-        if (class_exists(\Livewire\Livewire::class)) {
-            \Livewire\Livewire::routes();
-        }
-
         // Register Resend mail transport
         Mail::extend('resend', function (array $config) {
             return new ResendTransport(env('RESEND_API_KEY'));
