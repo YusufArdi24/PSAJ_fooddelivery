@@ -49,7 +49,7 @@ class MenuController extends Controller
         ]);
     }
     
-    public function show($id)
+    public function show($id, Request $request)
     {
         $menu = Menu::with(['admin', 'activePromo'])->find($id);
         
@@ -72,11 +72,9 @@ class MenuController extends Controller
         $recommendedMenuIds = [];
         
         // Get customer ID from authorization header if available
-        if ($request = request()) {
-            $user = $request->user('sanctum');
-            if ($user) {
-                $recommendedMenuIds = $this->getRecommendedMenuIds($user->CustomerID);
-            }
+        $user = $request->user('sanctum');
+        if ($user) {
+            $recommendedMenuIds = $this->getRecommendedMenuIds($user->CustomerID);
         }
         
         $menu = $this->appendPromoInfo($menu);

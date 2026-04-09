@@ -34,6 +34,17 @@ class Menu extends Model
 
     protected $appends = ['image_url', 'formatted_price'];
 
+    // Ensure image_url is always loaded in queries
+    public static function boot()
+    {
+        parent::boot();
+        
+        static::retrieved(function($model) {
+            // Force evaluate image_url attribute when retrieved
+            $model->image_url;
+        });
+    }
+
     // Relationships
     public function admin()
     {

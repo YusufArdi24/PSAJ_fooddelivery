@@ -181,11 +181,14 @@ export const convertMenuToFrontendFormat = (menu: MenuItem) => {
     ? (typeof menu.display_price === 'string' ? parseFloat(menu.display_price) : menu.display_price)
     : price;
   
+  // Ensure image always has a value - use image_url from backend, fallback to image, then placeholder
+  const imageUrl = menu.image_url || menu.image || '';
+  
   return {
     id: menu.MenuID.toString(),
     name: menu.name,
     price: displayPrice, // Use display_price (with discount if applicable)
-    image: menu.image_url || menu.image || '', // Use image_url from backend, fallback to image
+    image: imageUrl || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICAKICAKICAKICAKICAKICAKICAKICAKICAKICAKICAKICAKICAKICAKICAKICAKICAKICAKICAKICAKICAKICAKICAKICAKICAKICAKICAKICAKICAKICAKICAKICAKICAKICAKICAKICAKICAKICAKICAKI8L3N2Zz4=', // Fallback placeholder
     available: menu.is_available,
     category: menu.category,
     description: menu.description,
