@@ -192,7 +192,15 @@ echo "   ✅ Storage configured"
 # Step 7.8: Install Composer dependencies (CRITICAL!)
 echo "7️⃣ .8️⃣  Installing Composer dependencies..."
 if [ -f "composer.json" ]; then
-    composer install --no-dev --optimize-autoloader 2>&1 | tail -5
+    echo "   Running: composer install --no-dev --optimize-autoloader --no-interaction"
+    composer install --no-dev --optimize-autoloader --no-interaction 2>&1 | tail -10
+    
+    # Verify Livewire was installed
+    if [ -d "vendor/livewire/livewire" ]; then
+        echo "   ✅ Livewire package found in vendor"
+    else
+        echo "   ⚠️  Livewire not found in vendor - may not have been installed"
+    fi
     echo "   ✅ Composer dependencies installed"
 else
     echo "   ⚠️ composer.json not found"
@@ -202,36 +210,48 @@ fi
 echo "8️⃣  Publishing package assets..."
 mkdir -p public/vendor public/livewire
 
-# Publish Livewire assets
-echo "   Publishing Livewire via artisan..."
-php artisan livewire:publish --assets --force 2>&1 | grep -i "published\|published\|copying" || echo "   (artisan publish attempted)"
-php artisan filament:publish --force 2>&1 | grep -i "published\|copied" || echo "   (filament publish attempted)"
+# Step 8a: Publish Livewire and Filament via artisan
+echo "   8a️⃣  Publishing via artisan commands..."
+php artisan livewire:publish --assets --force 2>&1 | head -5
+php artisan filament:publish --force 2>&1 | head -5
 
-# FALLBACK: Manual copy if artisan publish didn't work
-if [ ! -f "public/livewire/livewire.js" ]; then
-    echo "   ℹ️  Artisan publish didn't create assets - trying manual extraction..."
-    
-    # Try to find and copy Livewire dist files
-    if [ -d "vendor/livewire/livewire/dist" ]; then
-        echo "   Found Livewire dist, copying..."
-        mkdir -p public/livewire
-        cp -v vendor/livewire/livewire/dist/*.js public/livewire/ 2>/dev/null || true
-        echo "   ✅ Livewire files copied manually"
-    elif [ -d "vendor/livewire/livewire/js" ]; then
-        echo "   Found Livewire js folder, copying..." 
-        mkdir -p public/livewire
-        cp -v vendor/livewire/livewire/js/*.js public/livewire/ 2>/dev/null || true
-        echo "   ✅ Livewire files copied manually"
+# Step 8b: AGGRESSIVE Livewire extraction from vendor
+echo "   8b️⃣  Extracting Livewire JS from vendor..."
+LIVEWIRE_EXTRACTED=0
+
+# Try multiple possible Livewire locations
+if [ -f "vendor/livewire/livewire/dist/livewire.js" ]; then
+    echo "   ✓ Found: vendor/livewire/livewire/dist/livewire.js"
+    cp -f vendor/livewire/livewire/dist/livewire.js public/livewire/livewire.js
+    LIVEWIRE_EXTRACTED=1
+elif [ -f "vendor/livewire/livewire/dist/livewire.umd.js" ]; then
+    echo "   ✓ Found: vendor/livewire/livewire/dist/livewire.umd.js"
+    cp -f vendor/livewire/livewire/dist/livewire.umd.js public/livewire/livewire.js
+    LIVEWIRE_EXTRACTED=1
+elif [ -d "vendor/livewire/livewire/dist" ]; then
+    echo "   ✓ Dist directory found, copying all .js files..."
+    cp -f vendor/livewire/livewire/dist/*.js public/livewire/ 2>/dev/null || true
+    if [ -f "public/livewire/livewire.js" ] || [ -f "public/livewire/livewire.umd.js" ]; then
+        LIVEWIRE_EXTRACTED=1
     fi
 fi
 
-# Final verification
+# Step 8c: Final verification
+echo "   8c️⃣  Verifying extraction..."
 if [ -f "public/livewire/livewire.js" ]; then
-    echo "   ✅ Livewire JS file ready: $(ls -lh public/livewire/livewire.js | awk '{print $5, $9}')"
+    FILE_SIZE=$(ls -lh public/livewire/livewire.js | awk '{print $5}')
+    echo "   ✅ Livewire JS ready! Size: $FILE_SIZE"
+    LIVEWIRE_EXTRACTED=1
+elif [ -f "public/livewire/livewire.umd.js" ]; then
+    FILE_SIZE=$(ls -lh public/livewire/livewire.umd.js | awk '{print $5}')
+    echo "   ✅ Livewire UMD JS ready! Size: $FILE_SIZE"
+    cp -f public/livewire/livewire.umd.js public/livewire/livewire.js
+    LIVEWIRE_EXTRACTED=1
 else
-    echo "   ⚠️  Livewire JS file will be served dynamically via route"
+    echo "   ⚠️  Livewire JS not found - will serve via Livewire::routes()"
 fi
 
+# Set permissions
 chmod -R 755 public/vendor public/livewire 2>/dev/null || true
 echo "   ✅ Assets configuration complete"
 

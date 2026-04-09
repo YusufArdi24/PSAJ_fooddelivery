@@ -11,23 +11,18 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-Route::get('/test123', function () {
-    return 'TEST ROUTE WORKS';
-});
-
-// Serve Livewire JS if it exists on disk
+// Serve Livewire JS from disk if it exists (fallback for file serving)
 Route::get('/livewire/livewire.js', function () {
     $path = public_path('livewire/livewire.js');
     if (file_exists($path)) {
-        return file_get_contents($path);
+        return response()->file($path, [
+            'Content-Type' => 'application/javascript',
+            'Cache-Control' => 'public, max-age=3600',
+        ]);
     }
+    // If file doesn't exist, try Livewire route if available
     abort(404);
-})->withoutMiddleware(['web']);
-
-// DEBUG
-Route::get('/_debug', function () {
-    return 'OK - Routes are working';
-});
+})->withoutMiddleware('web');
 
 // Storage files with CORS support
 Route::middleware(['storage.cors'])->group(function () {

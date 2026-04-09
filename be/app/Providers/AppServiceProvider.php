@@ -11,6 +11,7 @@ use App\Observers\PromoObserver;
 use App\Observers\OrderObserver;
 use App\Notifications\CustomerVerifyEmail;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Log;
 use App\Mail\Transports\ResendTransport;
 
 class AppServiceProvider extends ServiceProvider
@@ -28,6 +29,15 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Register Livewire routes if Livewire is available
+        if (class_exists(\Livewire\Livewire::class)) {
+            try {
+                \Livewire\Livewire::routes();
+            } catch (\Throwable $e) {
+                \Log::warning('Livewire routing failed: ' . $e->getMessage());
+            }
+        }
+
         // Register Resend mail transport
         Mail::extend('resend', function (array $config) {
             return new ResendTransport(env('RESEND_API_KEY'));
