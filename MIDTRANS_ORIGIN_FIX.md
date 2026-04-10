@@ -315,50 +315,90 @@ https://psajfooddelivery-production.up.railway.app/api/v1/payment/notification
 
 ---
 
-## Quick Debug: Test Snap.pay di Console
+## Snap Token 404 Error - Debug Guide
 
-**Step 1: Buka frontend (vercel atau localhost)**
+**Error Signs:**
+```
+app.midtrans.com/snap/v3/experiment?id=... 404
+app.midtrans.com/snap/v1/transactions/... 404
+```
 
-**Step 2: Buka DevTools (F12) → Console tab**
+**Artinya**: Snap token INVALID atau tidak bisa di-lookup oleh Midtrans
 
-**Step 3: Jalankan test ini:**
+### Quick Debug: Test Snap Transaction Creation
+
+**Step 1: Buka frontend → DevTools (F12) → Console**
+
+**Step 2: Jalankan test ini untuk create transaction:**
 
 ```javascript
-// Check 1: Verify snap object loaded
-console.log("Snap object:", window.snap);
+// TEST 1: Create Snap Transaction
+const orderId = 1;  // Use EXISTING order ID from your account
+const accessToken = localStorage.getItem('auth_token'); // Atau get dari session
 
-// Check 2: Try to create a test transaction via API
 fetch('https://psajfooddelivery-production.up.railway.app/api/v1/payment/snap/create', {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
-    'Authorization': 'Bearer YOUR_ACCESS_TOKEN_HERE'
+    'Authorization': `Bearer ${accessToken}`
   },
   body: JSON.stringify({
-    order_id: 999,  // Use existing order ID
+    order_id: orderId,
     payment_method: 'gopay'
   })
 })
 .then(r => r.json())
 .then(data => {
-  console.log("Snap transaction created:", data);
+  console.log("=== SNAP TRANSACTION RESPONSE ===");
+  console.log(JSON.stringify(data, null, 2));
   
-  // If successful, try to open payment
-  if (data.success && window.snap) {
-    window.snap.pay(data.data.snap_token, {
-      onSuccess: (result) => console.log("Success:", result),
-      onError: (result) => console.log("Error:", result),
+  if (!data.success) {
+    console.error("❌ Failed to create transaction:", data.message);
+    return;
+  }
+  
+  const snapToken = data.data.snap_token;
+  console.log("✅ Snap Token Created:", snapToken);
+  console.log("Client Key:", data.data.client_key);
+  console.log("Snap URL:", data.data.snap_js_url);
+  
+  // TEST 2: Check if snap object is loaded
+  console.log("=== SNAP.JS STATUS ===");
+  console.log("window.snap exists:", !!(window.snap));
+  
+  if (window.snap) {
+    // TEST 3: Try to open payment
+    console.log("Opening payment modal...");
+    window.snap.pay(snapToken, {
+      onSuccess: (result) => {
+        console.log("✅ Payment Success:", result);
+      },
+      onPending: (result) => {
+        console.log("⏳ Payment Pending:", result);
+      },
+      onError: (result) => {
+        console.error("❌ Payment Error:", result);
+      },
+      onClose: () => {
+        console.log("Payment modal closed");
+      }
     });
   } else {
-    console.error("Failed to create transaction or snap not loaded");
+    console.error("❌ Snap.js not loaded!");
   }
 })
-.catch(err => console.error("Error:", err));
+.catch(err => console.error("❌ Request Error:", err));
 ```
 
-**Expected Output:**
-- ✅ If snap.pay opens payment modal → Problem bukan di code, tapi di CORS whitelist
-- ❌ If error "No payment channels" → Contact Midtrans support
+### What to Look For:
+
+| Output | Meaning | Solution |
+|--------|---------|----------|
+| `snap_token` created ✅ | Backend ok | Move to TEST 2 |
+| `"error_messages": ["Access denied..."]` | Keys invalid/mismatched | Check `.env` keys |
+| `404 from Midtrans` when opening payment | Token invalid/expired | Check Server Key signature |
+| `window.snap undefined` | snap.js not loaded | CORS whitelist issue |
+| `window.snap.pay()` works but 404 still | Token not signed correctly | Check MidtransService
 
 ---
 
